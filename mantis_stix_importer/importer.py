@@ -204,6 +204,16 @@ class STIX_Import:
                 logger.debug("Embedding, but did not find type info")
                 return True
 
+        parent_attrs = extract_attributes(parent, prefix_key_char='')
+
+        if parent.name=='Test_Mechanism':
+            if 'xsi:type' in parent_attrs:
+                if 'OpenIOC2010TestMechanismType' in parent_attrs['xsi:type']:
+                    # We have an embedded OpenIOC document.
+                    return {}
+                    # We extract
+                    id_and_revision_info = self.id_and_revision_extractor(child)
+
         if ('id' in child_attributes or
                     'object_reference' in child_attributes):
             return extract_typeinfo(child)
