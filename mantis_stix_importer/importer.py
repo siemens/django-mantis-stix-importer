@@ -38,13 +38,20 @@ from dingos.models import FactDataType
 from mantis_core.models import \
     Identifier
 
+from mantis_openioc_importer.importer import OpenIOC_Import
+
+OpenIOC_Importer = OpenIOC_Import()
+
 from mantis_core.import_handling import MantisImporter
 
 # Import configuration constants from __init__.py
 
 from mantis_stix_importer import *
 
+
 logger = logging.getLogger(__name__)
+
+
 
 
 class STIX_Import:
@@ -54,7 +61,8 @@ class STIX_Import:
     #     http://cybox.mitre.org/objects#AddressObject-2
     #     http://cybox.mitre.org/common-2
 
-    RE_LIST_NS_TYPE_FROM_NS_URL = [re.compile(
+    RE_LIST_NS_TYPE_FROM_NS_URL = [
+        re.compile(
         "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$")]
 
     # In Cybox 1.x, the object properties were encompassed in an element called "Defined_Object". In the interest
@@ -76,6 +84,7 @@ class STIX_Import:
 
         self.default_identifier_ns_uri = None
 
+        self.processors = {'OpenIOC2010': OpenIOC_Import}
 
 
 
@@ -210,9 +219,12 @@ class STIX_Import:
             if 'xsi:type' in parent_attrs:
                 if 'OpenIOC2010TestMechanismType' in parent_attrs['xsi:type']:
                     # We have an embedded OpenIOC document.
-                    return {}
+
                     # We extract
-                    id_and_revision_info = self.id_and_revision_extractor(child)
+                    id_and_revision_info = OpenIOC_Importer.id_and_revision_extractor(child)
+                    id_and_revision_info['defer_processing'] = {'processor': 'OpenIOC2010'}
+                    return {'embedded_ns':child.ns().name,
+                            'id_and_revision_info':id_and_revision_info}
 
         if ('id' in child_attributes or
                     'object_reference' in child_attributes):
@@ -456,16 +468,16 @@ class STIX_Import:
         """
         if '@' in fact_dict['attribute']:
             # We remove all attributes added by Dingo during import
-            return True
+            return False
 
         attr_key = fact_dict['attribute']
 
         cybox_attr_ignore_list = [# we drop id-attributes:
                                   # everything that has an identifier gives rise to a new object and
                                   # the identifier is used then and there,
-                                  'id',
+                                  ###'id',
                                   'object_reference',
-                                  'idref',
+                                  ###'idref',
                                   # Type information we have already read and treated,
                                   # so no need to keep it around
                                   'xsi:type',
@@ -556,6 +568,7 @@ class STIX_Import:
             # Set up the fact data type as a data type that expresses
             # the referencing that is going on
             embedded_type_info = attr_info.get('@embedded_type_info', None)
+            logger.debug("Embedded type info %s" % embedded_type_info)
             type_info = self.derive_iobject_type(attr_info["@ns"],
                                                  embedded_type_info,
                                                  fact['term'].split('/')[-1])
@@ -628,6 +641,9 @@ class STIX_Import:
 
         ns_info = search_by_re_list(self.RE_LIST_NS_TYPE_FROM_NS_URL, self.namespace_dict.get(embedding_ns, ""))
 
+        if not ns_info:
+            ns_info = {}
+
         # This should yield the following information:
         # - For namespace of an Cybox Object such as http://cybox.mitre.org/objects#AddressObject-2:
         #   - iotype_ns = http://cybox.mitre.org/objects#AddressObject
@@ -642,18 +658,18 @@ class STIX_Import:
         #   - type = common
         #   - revision = 2
 
-        iobject_family_name = ns_info['family']
+        iobject_family_name = ns_info.get('family',None)
         if not iobject_family_name:
             iobject_family_name = ""
         family_info = {}
 
-        if ns_info['family_tag'] in ['stix', 'cybox']:
+        if ns_info.get('family_tag',None) in ['stix', 'cybox']:
             family_info = search_by_re_list(self.RE_LIST_NS_TYPE_FROM_NS_URL,
                                             self.namespace_dict.get(ns_info['family_tag'], ""))
             iobject_family_revision_name = family_info["revision"]
 
         else:
-            iobject_family_revision_name = ns_info["revision"]
+            iobject_family_revision_name = ns_info.get("revision",None)
         if not iobject_family_revision_name:
             iobject_family_revision_name = ''
 
@@ -740,6 +756,10 @@ class STIX_Import:
         elt_dict = import_result['dict_repr']
         file_content = import_result['file_content']
         embedded_objects = import_result['embedded_objects']
+        unprocessed_list = import_result['unprocessed']
+
+
+
 
 
 
@@ -763,6 +783,21 @@ class STIX_Import:
                                 elt_name,
                                 elt_dict,
                                 markings=markings)
+
+        for unprocessed_elt in unprocessed_list:
+            (id_and_rev_info,typeinfo,xml_node) = unprocessed_elt
+            processor_class = self.processors.get(id_and_rev_info['defer_processing']['processor'],None)
+            if processor_class:
+                processor = processor_class(namespace_dict=self.namespace_dict)
+
+                processor.xml_import(self,
+                                     xml_content=xml_node,
+                                     markings=markings,
+                                     identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]]
+                )
+            else:
+                logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
+
 
 
     def iobject_import(self,
