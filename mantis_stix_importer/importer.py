@@ -224,7 +224,7 @@ class STIX_Import:
                 if len(split_id) == 2:
                     # We derive the identifier of the object from the identifier of the observable
                     # as follows
-                    parent_id_and_revision_info['id'] = "%s:Object-in-%s" % (split_id[0],split_id[1])
+                    parent_id_and_revision_info['id'] = "%s:object-in-%s" % (split_id[0],split_id[1])
                     return {'embedded_ns' : extract_typeinfo(child),
                             'id_and_revision_info': parent_id_and_revision_info}
                 else:
@@ -232,7 +232,7 @@ class STIX_Import:
                     # but if it does, we give up.
                     return False
         else:
-        
+
             return False
 
 
