@@ -468,16 +468,16 @@ class STIX_Import:
         """
         if '@' in fact_dict['attribute']:
             # We remove all attributes added by Dingo during import
-            return False
+            return True
 
         attr_key = fact_dict['attribute']
 
         cybox_attr_ignore_list = [# we drop id-attributes:
                                   # everything that has an identifier gives rise to a new object and
                                   # the identifier is used then and there,
-                                  ###'id',
+                                  'id',
                                   'object_reference',
-                                  ###'idref',
+                                  'idref',
                                   # Type information we have already read and treated,
                                   # so no need to keep it around
                                   'xsi:type',
