@@ -174,8 +174,8 @@ class STIX_Import:
         #     (...)
 
 
-        if ('id' in child_attributes or
-                    'object_reference' in child_attributes):
+        def extract_typeinfo(child):
+
 
             # Let's try to find a grandchild and return the namespace of this grandchild:
             # This can be used as indicator for the object type that is referenced here.
@@ -203,7 +203,36 @@ class STIX_Import:
             else:
                 logger.debug("Embedding, but did not find type info")
                 return True
+
+        if ('id' in child_attributes or
+                    'object_reference' in child_attributes):
+            return extract_typeinfo(child)
+
+
+        elif child.name=='Object' and parent.name=='Observable':
+            # Unfortunately, the example files created by MITRE from Mandiant reports
+            # and OpenIOCs give an identifier to an observable, but not to the
+            # object embedded in the observable. We, however, need an identifier for
+            # the object, because otherwise the whole machinery that infers an object's
+            # type does not work. So, if we find an object without identifier that
+            # is embedded in an observable with identifier, we also want to extract
+            # the object ... and need to derive the object identifier from the
+            # observable identifier.
+            parent_id_and_revision_info = self.id_and_revision_extractor(parent)
+            if 'id' in parent_id_and_revision_info:
+                split_id = parent_id_and_revision_info['id'].split(':')
+                if len(split_id) == 2:
+                    # We derive the identifier of the object from the identifier of the observable
+                    # as follows
+                    parent_id_and_revision_info['id'] = "%s:Object-in-%s" % (split_id[0],split_id[1])
+                    return {'embedded_ns' : extract_typeinfo(child),
+                            'id_and_revision_info': parent_id_and_revision_info}
+                else:
+                    # The identifier had a faulty shape (no namespace info). This should not happen,
+                    # but if it does, we give up.
+                    return False
         else:
+        
             return False
 
 
