@@ -21,7 +21,8 @@ import re
 import logging
 import hashlib
 
-from django.core.files.storage import default_storage
+
+
 from django.core.files.base import ContentFile
 
 from django.utils import timezone
@@ -31,12 +32,14 @@ from dingos.core.xml_utils import extract_attributes
 from dingos.core.decorators import print_arguments
 from dingos.core.utilities import search_by_re_list
 
+import dingos
+
 from dingos import *
 
-from dingos.models import FactDataType
+from dingos.models import FactDataType, write_large_value
 
 from mantis_core.models import \
-    Identifier
+    Identifier, FactValue
 
 from mantis_openioc_importer.importer import OpenIOC_Import
 
@@ -50,6 +53,8 @@ from mantis_stix_importer import *
 
 
 logger = logging.getLogger(__name__)
+
+
 
 
 
@@ -114,6 +119,7 @@ class STIX_Import:
                   'timestamp': None,
         }
 
+
         if xml_elt.properties:
             attributes = extract_attributes(xml_elt, prefix_key_char='@')
             # Extract identifier:
@@ -130,6 +136,10 @@ class STIX_Import:
                 #     (...)
                 result['id'] = attributes['@object_reference']
 
+            elif '@phase_id' in attributes:
+                result['id'] = attributes['@phase_id']
+                result['extract_empty_embedded'] = True
+
             # Extract timestamp information
             #
             # Unfortunately, STIX/Cybox do not allow for addition of revision/timestamp information
@@ -143,6 +153,7 @@ class STIX_Import:
 
             if '@revision_timestamp' in attributes:
                 result['timestamp'] = attributes['@revision_timestamp']
+
 
         return result
 
@@ -226,33 +237,32 @@ class STIX_Import:
                     return {'embedded_ns':child.ns().name,
                             'id_and_revision_info':id_and_revision_info}
 
+        if parent.name=='Kill_Chain' and child.name=='Kill_Chain_Phase':
+            logger.debug("Found killchain phase %s" % extract_typeinfo(child))
+            return extract_typeinfo(child)
+
+
+
+
         if ('id' in child_attributes or
                     'object_reference' in child_attributes):
             return extract_typeinfo(child)
 
 
-        elif child.name=='Object' and parent.name=='Observable':
-            # Unfortunately, the example files created by MITRE from Mandiant reports
+        elif child.name=='Object' and not 'idref' in child_attributes:
+            # Unfortunately, e.g., the example files created by MITRE from Mandiant reports
             # and OpenIOCs give an identifier to an observable, but not to the
             # object embedded in the observable. We, however, need an identifier for
             # the object, because otherwise the whole machinery that infers an object's
             # type does not work. So, if we find an object without identifier that
             # is embedded in an observable with identifier, we also want to extract
             # the object ... and need to derive the object identifier from the
-            # observable identifier.
-            parent_id_and_revision_info = self.id_and_revision_extractor(parent)
-            if 'id' in parent_id_and_revision_info:
-                split_id = parent_id_and_revision_info['id'].split(':')
-                if len(split_id) == 2:
-                    # We derive the identifier of the object from the identifier of the observable
-                    # as follows
-                    parent_id_and_revision_info['id'] = "%s:object-in-%s" % (split_id[0],split_id[1])
-                    return {'embedded_ns' : extract_typeinfo(child),
-                            'id_and_revision_info': parent_id_and_revision_info}
-                else:
-                    # The identifier had a faulty shape (no namespace info). This should not happen,
-                    # but if it does, we give up.
-                    return False
+            # observable identifier. This is done automagically by the xml_import
+            # function itself.
+
+            return extract_typeinfo(child)
+
+
         else:
 
             return False
@@ -277,12 +287,6 @@ class STIX_Import:
         Handler for facts whose content is to be written to disk rather
         than stored in the database. We use it for all elements
         that contain the string 'Raw_' ('Raw_Header', 'Raw_Artifact', ...)
-
-        Note that
-
-        TODO: This handler is currently only a proof of concept: in the following
-        revisions, we need to put more effort in to managing disk-storage (where to
-        save stuff to, etc.)
         """
         # get the value
         raw_value = add_fact_kargs['values'][0]
@@ -290,16 +294,11 @@ class STIX_Import:
         if len(raw_value) >= RAW_DATA_TO_DB_FOR_LENGTH_LESS_THAN:
             # rewrite the argument for the creation of the fact: there are
             # no values to be added to the database
-            add_fact_kargs['values'] = [hashlib.sha256(raw_value).hexdigest()]
+            (value_hash,storage_location) = write_large_value(raw_value,
+                                                              dingos.DINGOS_LARGE_VALUE_DESTINATION)
 
-            add_fact_kargs['value_on_disk'] = True
+            add_fact_kargs['values'] = [(value_hash,storage_location)]
 
-            file_name = '%s.blob' % (add_fact_kargs['values'][0])
-
-            if default_storage.exists(file_name):
-                default_storage.delete(file_name)
-
-            default_storage.save(file_name, ContentFile(raw_value))
 
         return True
 
@@ -320,7 +319,23 @@ class STIX_Import:
         a reference to an object.
         """
 
-        (namespace, namespace_uri, uid) = self.split_qname(attr_info['idref'])
+        if 'idref' in attr_info:
+            ref_key = 'idref'
+            (namespace, namespace_uri, uid) = self.split_qname(attr_info[ref_key])
+        elif fact['attribute'] and fact['attribute'] == 'phase_id':
+
+            if fact['term']=='':
+                return True
+            else:
+                (namespace, namespace_uri, uid) = self.split_qname(fact['value'])
+        elif fact['attribute'] and fact['attribute'] == 'kill_chain_id':
+            if fact['term'] == '':
+                return True
+            else:
+                (namespace, namespace_uri, uid) = self.split_qname(fact['value'])
+
+
+
 
         timestamp = None
 
@@ -370,27 +385,22 @@ class STIX_Import:
         """
         Handler for dealing with comma-separated values.
 
+
         Unfortunately, CybOX et al. sometimes use comma-separated
-        value lists rather than an XML structure that can contain
-        several values.
+        value lists. Or rather, since Cybox 2.0.1, '##comma##'-separated lists.
 
-        This handler is called for elements concerning comma-separated
-        values such as the following example::
+        At least now we can easily recognize comma-separated lists ...
+        until one joker starts putting the string '##comma##' into
+        his malware and email, that is...
 
-           <AddrObj:Address_Value condition="Equals" apply_condition="ANY">attacker@example.com,attacker1@example.com,attacker@bad.example.com</AddrObj:Address_Value>
-
-
-        The handler itself is rather straightforward  -- here
-        the difficult part is finding out when to actually apply it;
-        The current specification of the predicate (see below) probably
-        still misses a few cases...
+        The handler itself is rather straightforward.
         """
 
         # Since Cybox 2.0.1, '##comma##' is to be used instead of ','. So,
         # we first check whether '##comma##' occurs -- if so, we take
         # that as separator; if not, we take ','
 
-        if '##comma## ' in fact['value']:
+        if '##comma##' in fact['value']:
             separator = '##comma##'
         else:
             separator = ','
@@ -406,20 +416,16 @@ class STIX_Import:
         Predicate for dealing with comma-separated values.
 
         Unfortunately, CybOX et al. sometimes use comma-separated
-        value lists.
+        value lists. Or rather, since Cybox 2.0.1, '##comma##'-separated lists.
 
-        This predicate recognizes elements containing
-        comma-separated values such as the following example::
-
-           <AddrObj:Address_Value condition="Equals" apply_condition="ANY">attacker@example.com,attacker1@example.com,attacker@bad.example.com</AddrObj:Address_Value>
-
-        TODO: There are probably more occurrences of coma-separated values in Cybox.
+        At least now we can easily recognize comma-separated lists ...
+        until one joker starts putting the string '##comma##' into
+        his malware and email, that is...
         """
 
         #
-        return (attr_info.get("apply_condition", False)
-                # If there is a pattern type specified, then this is no case of comma separated values
-                and not attr_info.get("pattern_type", False))
+        return ('##comma##' in fact['value'])
+
 
 
     def cybox_defined_object_in_fact_term_handler(self, enrichment, fact, attr_info, add_fact_kargs):
@@ -466,7 +472,7 @@ class STIX_Import:
         of each fact and passed to the handler functions called for the fact.
 
         """
-        if '@' in fact_dict['attribute']:
+        if '@' in fact_dict['attribute']: # and not fact_dict['attribute'] == '@ns':
             # We remove all attributes added by Dingo during import
             return True
 
@@ -502,7 +508,10 @@ class STIX_Import:
              self.cybox_RAW_ft_handler),
             # When we find a reference, we either retrieve the referenced object from
             # the database (if it exists) or we generate a PLACEHOLDER object
-            (lambda fact, attr_info: "idref" in attr_info,
+            (lambda fact, attr_info:    ("idref" in attr_info)
+                                     or (fact['attribute']
+                                         and ("phase_id" in fact['attribute']
+                                              or ("kill_chain_id" in fact['attribute']))),
              self.reference_handler),
             # We normalize elements containing comma-separated values
             (self.cybox_csv_predicate, self.cybox_csv_handler),
@@ -830,11 +839,9 @@ class STIX_Import:
         # Find out what the type of the Information Object to be created should be
         type_info = self.derive_iobject_type(obj_dict['@@ns'], iobject_type_ns, elt_name)
 
-        if not id_and_rev_info['id']:
-            logger.error("Attempt to import object (element name %s) without id -- object is ignored" % elt_name)
+        if not 'id' in id_and_rev_info or not id_and_rev_info['id']:
+            logger.warning("Object of type %s without id information encountered, skipping" % elt_name)
             return
-            #cybox_id = gen_cybox_id(iobject_type_name)
-
         (namespace, namespace_uri, uid) = self.split_qname(id_and_rev_info['id'])
 
         (info_obj, existed) = MantisImporter.create_iobject(iobject_family_name=type_info['iobject_family_name'],
