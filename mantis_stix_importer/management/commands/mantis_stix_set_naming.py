@@ -114,6 +114,7 @@ schema_list = [
         "cybox.mitre.org",
         "http://cybox.mitre.org/objects#AddressObject",
         [
+            "[Properties/Address_Value] (category [Properties/Address_Value@category]) ([fact_count] facts)"
             "[fact_count_equal_1?][term_of_fact_num_0] = [value_of_fact_num_0]"
         ]
     ],

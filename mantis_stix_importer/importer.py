@@ -690,18 +690,28 @@ class STIX_Import:
         if embedded_ns:
             namespace_uri = self.namespace_dict.get(embedded_ns, "")
             type_info = search_by_re_list(self.RE_LIST_NS_TYPE_FROM_NS_URL, namespace_uri)
-            if type_info['type'] in ['common', 'cybox', 'stix']:
+            if not type_info:
+                type_info = {}
+            if type_info and type_info.get('type',None) in ['common', 'cybox', 'stix']:
                 iobject_type_name = elt_name
                 iobject_type_namespace_uri = ns_info['iotype_ns']
                 iobject_type_revision_name = ns_info['revision']
             else:
-                iobject_type_namespace_uri = type_info['iotype_ns']
-                iobject_type_name = type_info.get('type')#.split('Object')[0]
-                iobject_type_revision_name = type_info['revision']
+                iobject_type_namespace_uri = type_info.get('iotype_ns',"%s/%s" % (dingos.DINGOS_MISSING_ID_NAMESPACE_URI_PREFIX,embedded_ns))
+                iobject_type_name = type_info.get('type',embedded_ns)#.split('Object')[0]
+                iobject_type_revision_name = type_info.get('revision','')
+
+            if not 'iotype_ns' in type_info:
+                print type_info
+                print namespace_uri
+                print embedded_ns
+
+
         else:
             iobject_type_name = elt_name
             iobject_type_revision_name = iobject_family_revision_name
-            iobject_type_namespace_uri = ns_info.get("iotype_ns", "")
+            iobject_type_namespace_uri = ns_info.get("iotype_ns", "%s/%s" % (dingos.DINGOS_MISSING_ID_NAMESPACE_URI_PREFIX,elt_name))
+
 
         if not iobject_type_revision_name:
             iobject_type_revision_name = ''
