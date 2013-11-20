@@ -241,7 +241,7 @@ class STIX_Import:
             # the object ... and need to derive the object identifier from the
             # observable identifier.
             parent_id_and_revision_info = self.id_and_revision_extractor(parent)
-            if 'id' in parent_id_and_revision_info:
+            if parent_id_and_revision_info['id']:
                 split_id = parent_id_and_revision_info['id'].split(':')
                 if len(split_id) == 2:
                     # We derive the identifier of the object from the identifier of the observable
