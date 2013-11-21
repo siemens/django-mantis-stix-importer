@@ -668,7 +668,7 @@ schema_list = [
         "cybox.mitre.org",
         "http://cybox.mitre.org/objects#FileObject",
         [
-            "[Properties/Hashes/Hash/Type]:[Properties/Hashes/Hash/Simple_Hash_Value] ([fact_count] facts)",
+            "[Properties/File_Name] ([fact_count] facts)",
             "[Properties/Hashes/Hash/Type]:[Properties/Hashes/Hash/Simple_Hash_Value] ([fact_count] facts)",
             "[fact_count_equal_1?][term_of_fact_num_0] = [value_of_fact_num_0]"
         ]

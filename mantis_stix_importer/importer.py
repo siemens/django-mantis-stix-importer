@@ -20,7 +20,7 @@
 import re
 import logging
 import hashlib
-
+import pprint
 
 
 from django.core.files.base import ContentFile
@@ -51,12 +51,10 @@ from mantis_core.import_handling import MantisImporter
 
 from mantis_stix_importer import *
 
-
 logger = logging.getLogger(__name__)
 
 
-
-
+pp = pprint.PrettyPrinter(indent=2)
 
 
 class STIX_Import:
@@ -454,6 +452,42 @@ class STIX_Import:
         """
         return self.RE_DEFINED_OBJECT.search(fact['term'])
 
+    def force_nonleaf_fact_predicate(self, fact_dict, attr_dict):
+
+        """
+        The force_noneleaf_fact_predicate determines whether a fact should
+        be created for a non-leaf XML node. Consider the following structure::
+
+            <cybox:Related_Objects>
+                <cybox:Related_Object idref="example:URI-f9daa775-ad68-4a94-b110-549e7f26bf19">
+                    <cybox:Relationship xsi:type="cyboxVocabs:ObjectRelationshipVocab-1.0">Connected_To</cybox:Relationship>
+                </cybox:Related_Object>
+            </cybox:Related_Objects>
+
+        BY default, the importer would not create a fact with fact term
+        "Related_Objects/Related_Object", because this does not denote a leaf
+        (either a value or an attribute) in the XML structure. But in this particular
+        case, we need the fact "Related_Objects/Related_Object", because this is
+        where the reference to the referenced object will be attached.
+
+        This is what the force_nonleaf_predicate is for: it takes two arguments:
+        firstly, a fact dictionary of the following form::
+
+               { 'node_id': 'N001:L000:',
+                 'term': 'Related_Objects/Related_Object',
+                 'attribute': 'condition',
+                 'value': u''
+               }
+
+        Secondly, a dictionary with key-value pairs of all attributes (identitified
+        by a leading '@' attached directly to the node.
+
+        If the predicate returns 'True', then a fact is created for a non-leaf
+        element; otherwise, no fact is created.
+
+        """
+
+        return 'Related_Object' in fact_dict['term'] and '@idref' in attr_dict
 
     def attr_ignore_predicate(self, fact_dict):
         """
@@ -472,6 +506,9 @@ class STIX_Import:
         of each fact and passed to the handler functions called for the fact.
 
         """
+        if not fact_dict['attribute']:
+            return False
+
         if '@' in fact_dict['attribute']: # and not fact_dict['attribute'] == '@ns':
             # We remove all attributes added by Dingo during import
             return True
@@ -701,12 +738,6 @@ class STIX_Import:
                 iobject_type_name = type_info.get('type',embedded_ns)#.split('Object')[0]
                 iobject_type_revision_name = type_info.get('revision','')
 
-            if not 'iotype_ns' in type_info:
-                print type_info
-                print namespace_uri
-                print embedded_ns
-
-
         else:
             iobject_type_name = elt_name
             iobject_type_revision_name = iobject_family_revision_name
@@ -797,6 +828,8 @@ class STIX_Import:
             elt_dict = embedded_object['dict_repr']
             pending_stack.append((id_and_rev_info, elt_name, elt_dict))
 
+        #pp.pprint(pending_stack)
+
         for (id_and_rev_info, elt_name, elt_dict) in pending_stack:
             self.iobject_import(id_and_rev_info,
                                 elt_name,
@@ -826,7 +859,7 @@ class STIX_Import:
                        markings=None,
                        cybox_id=None):
         """
-
+        Derives InfoObjectType and import InfoObjectType
 
         """
 
@@ -871,7 +904,8 @@ class STIX_Import:
                                                             config_hooks={
                                                             'special_ft_handler': self.fact_handler_list(),
                                                             'datatype_extractor': self.cybox_datatype_extractor,
-                                                            'attr_ignore_predicate': self.attr_ignore_predicate},
+                                                            'attr_ignore_predicate': self.attr_ignore_predicate,
+                                                            'force_nonleaf_fact_predicate': self.force_nonleaf_fact_predicate},
                                                             namespace_dict=self.namespace_dict,
         )
 
