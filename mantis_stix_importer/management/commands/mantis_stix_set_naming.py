@@ -33,8 +33,19 @@ schema_list = [
         "stix.mitre.org",
         "http://stix.mitre.org/stix",
         [
-            "[Description] ([Package_Intent])",
-            "[Description]"
+            "[STIX_Header/Title] ([Package_Intent])",
+            "[STIX_Header/Title]",
+            "[STIX_Header/Description] ([Package_Intent])",
+            "[STIX_Header/Description]"
+        ]
+    ],
+    [
+        "Marking",
+        "data-marking.mitre.org",
+        "http://data-marking.mitre.org/Marking",
+        [
+            "[Marking_Structure@color]",
+            "[Marking_Structure/Statement]"
         ]
     ],
     [
@@ -42,7 +53,8 @@ schema_list = [
         "stix.mitre.org",
         "http://stix.mitre.org/Indicator",
         [
-            "[Title]"
+            "[Title]",
+            "[Description]"
         ]
     ],
     [
@@ -195,6 +207,7 @@ schema_list = [
         "cybox.mitre.org",
         "http://cybox.mitre.org/objects#EmailMessageObject",
         [
+            "Subject: [Properties/Header/Subject] ([fact_count] facts)",
             "[fact_count_equal_1?][term_of_fact_num_0] = [value_of_fact_num_0]"
         ]
     ],
