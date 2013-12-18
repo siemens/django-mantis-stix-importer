@@ -37,8 +37,8 @@ setup(
     include_package_data=True,
     install_requires=[
         "django>=1.5.5",
-        "django-dingos>=0.1.0",
-        "django-mantis-core>=0.1.0"
+        "django-dingos>=0.0.9",
+        "django-mantis-core>=0.0.9"
     ],
     license="GPLv2+",
     zip_safe=False,

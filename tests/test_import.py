@@ -52,9 +52,9 @@ class XML_Import_Tests(CustomSettingsTestCase):
                      ('FactTerm', 52),
                      ('FactTerm2Type', 55),
                      ('FactValue', 69),
-                     ('Identifier', 16),
+                     ('Identifier', 18),
                      ('IdentifierNameSpace', 2),
-                     ('InfoObject', 16),
+                     ('InfoObject', 18),
                      ('InfoObject2Fact', 92),
                      ('InfoObjectFamily', 4),
                      ('InfoObjectType', 10),
@@ -72,7 +72,7 @@ class XML_Import_Tests(CustomSettingsTestCase):
         #pp.pprint(delta)
 
         expected = [ ('Identifier', 1),
-                     ('InfoObject', 16),
+                     ('InfoObject', 18),
                      ('InfoObject2Fact', 92),
                      ('Marking2X', 15)]
 
