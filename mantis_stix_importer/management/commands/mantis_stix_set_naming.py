@@ -28,6 +28,17 @@ from dingos.management.commands.dingos_manage_naming_schemas import Command as M
 
 
 schema_list = [
+
+    [
+        "ioc",
+        "ioc.mandiant.com",
+        "http://stix.mitre.org/extensions/TestMechanism#OpenIOC2010-1",
+        [
+            "[short_description]",
+        ]
+    ],
+
+
     [
         "STIX_Package",
         "stix.mitre.org",

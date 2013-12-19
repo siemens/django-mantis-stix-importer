@@ -45,6 +45,7 @@ from mantis_openioc_importer.importer import OpenIOC_Import
 
 OpenIOC_Importer = OpenIOC_Import()
 
+
 from mantis_core.import_handling import MantisImporter
 
 # Import configuration constants from __init__.py
@@ -307,12 +308,14 @@ class STIX_Import:
             (id_and_rev_info,typeinfo,xml_node) = unprocessed_elt
             processor_class = self.processors.get(id_and_rev_info['defer_processing']['processor'],None)
             if processor_class:
+
                 processor = processor_class(namespace_dict=self.namespace_dict)
 
                 processor.xml_import(self,
                                      xml_content=xml_node,
                                      markings=markings,
-                                     identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]]
+                                     identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]],
+                                     initialize_importer=False
                 )
             else:
                 logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
@@ -495,7 +498,7 @@ class STIX_Import:
                 if 'OpenIOC2010TestMechanismType' in parent_attrs['xsi:type']:
                     # We have an embedded OpenIOC document.
 
-                    # We extract
+                    # We extract id and revision info and tag it for deferred treatement
                     id_and_revision_info = OpenIOC_Importer.id_and_revision_extractor(child)
                     id_and_revision_info['defer_processing'] = {'processor': 'OpenIOC2010'}
                     return {'embedded_ns':child.ns().name,
@@ -690,9 +693,6 @@ class STIX_Import:
                 return True
             else:
                 (namespace, namespace_uri, uid) = self.split_qname(fact['value'])
-
-
-
 
         timestamp = None
 
