@@ -14,7 +14,7 @@ The full documentation is at http://django-mantis-stix-importer.readthedocs.org.
 Quickstart
 ----------
 
-Please refer to the quickstart information of MANTIS, available at http://django-mantis.rtfd.org.
+Please refer to the quickstart information of MANTIS, available at http://django-mantis.readthedocs.org.
 
 Once you are set up with MANTIS, you can use the Django ``manage.py`` to import
 STIX indicators into your system as follows::
