@@ -154,15 +154,18 @@ class STIX_Import:
          without the **kwargs parameter, an error would occur.
          """
 
+        # Clear internal state such that same object can be reused for
+        # multiple imports.
+
+        self.__init__()
+
         self.default_identifier_ns_uri = identifier_ns_uri
 
         if not markings:
             markings = []
 
-        # Clear internal state such that same object can be reused for
-        # multiple imports.
 
-        self.__init__()
+
 
 
         # Use the generic XML import customized for STIX/CybOX import
@@ -202,6 +205,19 @@ class STIX_Import:
         embedded_objects = import_result['embedded_objects']
         unprocessed_list = import_result['unprocessed']
 
+
+        if not 'id' in top_level_id_and_rev_info or not top_level_id_and_rev_info['id']:
+            if self.default_identifier_ns_uri:
+                # Top-level element had no identifier. If a default namespace has been provided,
+                # then an identifier is generated
+                top_level_id_and_rev_info['id_ns'] = self.default_identifier_ns_uri
+                top_level_id_and_rev_info['id_uid'] = hashlib.md5(file_content).hexdigest()
+                logger.info("Top level element had no identifier: "
+                            "identifier %s has been generated " % top_level_id_and_rev_info['id_uid'])
+
+            else:
+                logger.warning("Top level element had no identifier. "
+                             "No identifier was generated, because no default namespace had been provided")
 
         # We now have the top-level object, the list of embedded objects,
         # and possibly a list of hitherto unprocessed XML nodes.
@@ -1169,10 +1185,14 @@ class STIX_Import:
         # Find out what the type of the Information Object to be created should be
         type_info = self.derive_iobject_type(obj_dict['@@ns'], iobject_type_ns, elt_name)
 
-        if not 'id' in id_and_rev_info or not id_and_rev_info['id']:
+        if (not 'id' in id_and_rev_info or not id_and_rev_info['id']) and (not 'id_ns' in id_and_rev_info):
             logger.info("Object of type %s without id information encountered, skipping" % elt_name)
             return
-        (namespace, namespace_uri, uid) = self.split_qname(id_and_rev_info['id'])
+        if 'id_ns' in id_and_rev_info:
+            namespace_uri = id_and_rev_info['id_ns']
+            uid = id_and_rev_info['id_uid']
+        else:
+            (namespace, namespace_uri, uid) = self.split_qname(id_and_rev_info['id'])
 
         (info_obj, existed) = MantisImporter.create_iobject(iobject_family_name=type_info['iobject_family_name'],
                                                             iobject_family_revision_name=type_info[
