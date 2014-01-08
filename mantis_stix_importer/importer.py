@@ -217,7 +217,8 @@ class STIX_Import:
 
             else:
                 logger.warning("Top level element had no identifier. "
-                             "No identifier was generated, because no default namespace had been provided")
+                    "No identifier was generated, because no default namespace had been provided "
+                    "(you can provide a namespace with the '-n' commandline parameter")
 
         # We now have the top-level object, the list of embedded objects,
         # and possibly a list of hitherto unprocessed XML nodes.
@@ -323,13 +324,24 @@ class STIX_Import:
         for unprocessed_elt in unprocessed_list:
             (id_and_rev_info,typeinfo,xml_node) = unprocessed_elt
             processor_class = self.processors.get(id_and_rev_info['defer_processing']['processor'],None)
+
+
+            if 'embedding_STIX_Package' in id_and_rev_info:
+                embedding_STIX_Package = id_and_rev_info['embedding_STIX_Package']
+            else:
+                embedding_STIX_Package = id_and_rev_info.get('inherited',{}).get('embedding_STIX_Package')
+
+            logger.debug("%s embedded in %s" % (id_and_rev_info['id'], embedding_STIX_Package))
+
+            object_markings = markings + marking_dict.get(embedding_STIX_Package,[])
+
             if processor_class:
 
                 processor = processor_class(namespace_dict=self.namespace_dict)
 
                 processor.xml_import(self,
                                      xml_content=xml_node,
-                                     markings=markings,
+                                     markings=object_markings,
                                      identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]],
                                      initialize_importer=False
                 )
@@ -517,6 +529,7 @@ class STIX_Import:
                     # We extract id and revision info and tag it for deferred treatement
                     id_and_revision_info = OpenIOC_Importer.id_and_revision_extractor(child)
                     id_and_revision_info['defer_processing'] = {'processor': 'OpenIOC2010'}
+                    logger.debug("XXX: Found OpenIOC with %s" % id_and_revision_info)
                     return {'embedded_ns':child.ns().name,
                             'id_and_revision_info':id_and_revision_info}
 
@@ -695,6 +708,8 @@ class STIX_Import:
         a reference to an object.
         """
 
+        logger.debug("XXX Found reference with %s" % attr_info)
+
         if 'idref' in attr_info:
             ref_key = 'idref'
             (namespace, namespace_uri, uid) = self.split_qname(attr_info[ref_key])
@@ -712,8 +727,8 @@ class STIX_Import:
 
         timestamp = None
 
-        #if '@revision_timestamp' in attr_info:
-        #    timestamp = attr_info['@revision_timestamp']
+        if '@timestamp' in attr_info:
+            timestamp = attr_info['@timestamp']
 
         if not timestamp:
             timestamp = self.create_timestamp
