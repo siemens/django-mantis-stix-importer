@@ -23,6 +23,8 @@ import hashlib
 import pprint
 from collections import deque
 
+from django.utils.dateparse import parse_datetime
+
 from django.core.files.base import ContentFile
 
 from django.utils import timezone
@@ -126,6 +128,8 @@ class STIX_Import:
 
         self.default_identifier_ns_uri = None
 
+
+
         # Here, we list the processors for embedded non-STIX/CybOX content.
         # Currently, only OpenIOC is treated.
 
@@ -157,7 +161,20 @@ class STIX_Import:
         # Clear internal state such that same object can be reused for
         # multiple imports.
 
-        self.__init__()
+
+        if 'create_timestamp' in kwargs and kwargs['create_timestamp']:
+
+            naive = parse_datetime(kwargs['create_timestamp'])
+
+            if not timezone.is_aware(naive):
+                aware = timezone.make_aware(naive,timezone.utc)
+            else:
+                aware = naive
+            self.create_timestamp = aware
+
+        self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
+
+        self.default_identifier_ns_uri = None
 
         self.default_identifier_ns_uri = identifier_ns_uri
 
@@ -377,7 +394,7 @@ class STIX_Import:
 
     def id_and_revision_extractor(self, xml_elt):
         """
-        Function for determing an identifier (and, where applicable, timestamp/revision
+        Function for determining an identifier (and, where applicable, timestamp/revision
         information) for extracted embedded content;
         to be used for DINGO's xml-import hook 'id_and_revision_extractor'.
 
@@ -769,6 +786,76 @@ class STIX_Import:
         return True
 
 
+    def attr_with_namespace_handler(self, enrichment, fact, attr_info, add_fact_kargs):
+        #    The signature of a predicate is as follows:
+        #
+        # - Inputs:
+        #   - fact dictionary of the following form::
+        #
+        #        { 'node_id': 'N001:L000:N000:A000',
+        #          'term': 'Hashes/Hash/Simple_Hash_Value',
+        #          'attribute': 'condition' / False,
+        #          'value': u'Equals'
+        #        }
+        #   - attr_info:
+        #     A dictionary with mapping of XML attributes concerning the node in question
+        #     (note that the keys do *not* have a leading '@' unless it is an internally
+        #     generated attribute by Dingo.
+        #
+        # - Output: Based on these inputs, the predicate must return True or False. If True
+        #   is returned, the associated handler function is run.
+        #
+        # The signature of a handler function is as follows:
+        #
+        # - Inputs:
+        #
+        #   - info_object: the information object to which the fact is to be added
+        #   - fact: the fact dictionary of the following form::
+        #        { 'node_id': 'N001:L000:N000:A000',
+        #          'term': 'Hashes/Hash/Simple_Hash_Value',
+        #          'attribute': 'condition' / False,
+        #          'value': u'Equals'
+        #        }
+        #   - attr_info:
+        #     A dictionary with mapping of XML attributes concerning the node in question
+        #     (note that the keys do *not* have a leading '@' unless it is an internally
+        #     generated attribute by Dingo.
+        #
+        #   - add_fact_kargs:
+        #     The arguments with which the fact will be generated after all handler functions
+        #     have been called. The dictionary contains the following keys::
+        #
+        #         'fact_dt_kind' : <FactDataType.NO_VOCAB/VOCAB_SINGLE/...>
+        #         'fact_dt_namespace_name': <human-readable shortname for namespace uri>
+        #         'fact_dt_namespace_uri': <namespace uri for datataype namespace>
+        #         'fact_term_name' : <Fact Term such as 'Header/Subject/Address'>
+        #         'fact_term_attribute': <Attribute key such as 'category' for fact terms describing an attribute>
+        #         'values' : <list of FactValue objects that are the values of the fact to be generated>
+        #         'node_id_name' : <node identifier such as 'N000:N000:A000'
+        #
+        # - Outputs:
+        #
+        #   The handler function outputs either True or False: If False is returned,
+        #   then the fact will *not* be generated. Please be aware that if you use this option,
+        #   then there will be 'missing' numbers in the sequence of node ids.
+        #   Thus, if you want to suppress the creation of facts for attributes,
+        #   rather use the hooking function 'attr_ignore_predicate'
+        #
+        #   As side effect, the function can make changes to the dictionary passed in parameter
+        #   'add_fact_kargs' and thus change the fact that will be created.
+        try:
+            ns_slug,value = fact['value'].split(':',1)
+            namespace_uri = self.namespace_dict.get(ns_slug,None)
+            if namespace_uri:
+                add_fact_kargs['fact_dt_namespace_uri'] = namespace_uri
+                add_fact_kargs['fact_dt_namespace_name'] = ns_slug
+                add_fact_kargs['fact_dt_name'] = ns_slug
+                add_fact_kargs['values'] = [value]
+            return True
+        except:
+            return True
+
+
     def cybox_csv_handler(self, enrichment, fact, attr_info, add_fact_kargs):
         """
         Handler for dealing with comma-separated values.
@@ -929,7 +1016,7 @@ class STIX_Import:
                                   'idref',
                                   # Type information we have already read and treated,
                                   # so no need to keep it around
-                                  'xsi:type',
+
                                   'datatype',
                                   'type',
                                   # value_set attributes are treated by a special handler
@@ -940,6 +1027,26 @@ class STIX_Import:
 
         if attr_key in cybox_attr_ignore_list:
             return True
+
+        if attr_key == 'xsi:type':
+
+            if fact_dict['term']== 'Properties':
+                # We only keep xsi:type information that is not on top-level of an object
+                # (if it was on top-level, we have integrated the information into
+                # the namespace of the InfoObject anyhow).
+                return True
+            if fact_dict.get('number_of_attributed_elements',0) == 0 and not 'Marking_Structure' in fact_dict['term']:
+                # We only keep xsi_type info in a node that has children: otherwise, the xsi:type
+                # refers to the type of the value in the element, and that we are already treating
+                # in the datatype_extractor. Exception: the Marking_Structures defined by MITRE
+                # do not contain subelements, but we want to keep the xsi:type information around.
+
+                return True
+
+        if 'Kill_Chain_Phases' in fact_dict['term'] and not fact_dict['attribute'] in ['phase_id','kill_chain_id']:
+            return True
+
+
         return False
 
 
@@ -962,6 +1069,8 @@ class STIX_Import:
             (lambda fact, attr_info: 'value_set' in attr_info, self.cybox_valueset_fact_handler),
             # We rename 'Defined_Object' in fact terms from Cybox 1.0 to 'Properties' of Cybox 2.0
             (self.cybox_defined_object_in_fact_term_predicate, self.cybox_defined_object_in_fact_term_handler),
+            # We extract namespace information out of xsi:type attributes
+            (lambda fact, attr_info: fact['attribute'] == 'xsi:type',self.attr_with_namespace_handler)
 
         ]
 
