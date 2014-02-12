@@ -740,6 +740,14 @@ schema_list = [
             "[Identity/Name]",
             "[Identity/Specification/PartyName/PersonName/NameElement]"
         ]
+    ],
+    [
+        "Identity",
+        "stix.mitre.org",
+        "http://stix.mitre.org/common",
+        [
+            "[Name]",
+        ]
     ]
 ]
 

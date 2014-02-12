@@ -124,6 +124,11 @@ class STIX_Import:
         # The creation time stamp
         self.create_timestamp = timezone.now()
 
+        self.default_timestamp = self.create_timestamp
+
+        # The creation time stamp
+
+
         self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
 
         self.default_identifier_ns_uri = None
@@ -162,15 +167,15 @@ class STIX_Import:
         # multiple imports.
 
 
-        if 'create_timestamp' in kwargs and kwargs['create_timestamp']:
+        if 'default_timestamp' in kwargs and kwargs['default_timestamp']:
 
-            naive = parse_datetime(kwargs['create_timestamp'])
+            naive = parse_datetime(kwargs['default_timestamp'])
 
             if not timezone.is_aware(naive):
                 aware = timezone.make_aware(naive,timezone.utc)
             else:
                 aware = naive
-            self.create_timestamp = aware
+            self.default_timestamp = aware
 
         self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
 
@@ -193,6 +198,7 @@ class STIX_Import:
                                                   ns_mapping=self.namespace_dict,
                                                   embedded_predicate=self.stix_embedding_pred,
                                                   id_and_revision_extractor=self.id_and_revision_extractor)
+
 
         # The MANTIS/DINGOS xml importer returns then the following structure::
         #
@@ -460,7 +466,37 @@ class STIX_Import:
             #    result['timestamp'] = attributes['@revision_timestamp']
 
         if xml_elt.name == 'STIX_Package':
+
             result['embedding_STIX_Package'] = result['id']
+
+            #setContextNode(node)
+            #ctxt = xml_elt.xpathNewContext()
+            timestamp_text = xml_elt.xpathEval("./*[contains(name(),'STIX_Header')]/*[contains(name(),'Information_Source')]"
+                                      "/*[contains(name(),'Time')]/*[contains(name(),'Produced_Time')]/text()") #[id=%s]/Information_Source" % result['id'])
+            #ctxt.xpathFreeContext()
+
+
+            if timestamp_text:
+                timestamp_string = timestamp_text[0].getContent().strip()
+                naive = parse_datetime(timestamp_string)
+                if naive:
+                    # Make sure that information regarding the timezone is
+                    # included in the time stamp. If it is not, we chose
+                    # utc as default timezone: if we assume that the same
+                    # producer of OpenIOC data always uses the same timezone
+                    # for filling in the 'last-modified' attribute, then
+                    # this serves the main purpose of time stamps for our
+                    # means: we can find out the latest revision of a
+                    # given piece of data.
+                    if not timezone.is_aware(naive):
+                        aware = timezone.make_aware(naive,timezone.utc)
+                    else:
+                        aware = naive
+                    result['timestamp']= aware
+
+
+
+
 
         return result
 
@@ -747,13 +783,14 @@ class STIX_Import:
         if '@timestamp' in attr_info:
             timestamp = attr_info['@timestamp']
 
-        if not timestamp:
-            timestamp = self.create_timestamp
+        #if not timestamp:
+        #    timestamp = self.create_timestamp
 
         (target_mantis_obj, existed) = MantisImporter.create_iobject(
             uid=uid,
             identifier_ns_uri=namespace_uri,
-            timestamp=timestamp)
+            timestamp=timestamp,
+            create_timestamp=self.default_timestamp)
 
         logger.debug("Creation of Placeholder for %s %s returned %s" % (namespace_uri, uid, existed))
         add_fact_kargs['value_iobject_id'] = Identifier.objects.get(uid=uid, namespace__uri=namespace_uri)
@@ -1227,7 +1264,10 @@ class STIX_Import:
         if ns_info.get('family_tag',None) in ['stix', 'cybox']:
             family_info = search_by_re_list(self.RE_LIST_NS_TYPE_FROM_NS_URL,
                                             self.namespace_dict.get(ns_info['family_tag'], ""))
-            iobject_family_revision_name = family_info["revision"]
+            if family_info:
+                iobject_family_revision_name = family_info["revision"]
+            else:
+                iobject_family_revision_name = None
 
         else:
             iobject_family_revision_name = ns_info.get("revision",None)
@@ -1329,7 +1369,8 @@ class STIX_Import:
                                                             iobject_data=obj_dict,
                                                             uid=uid,
                                                             identifier_ns_uri=namespace_uri,
-                                                            timestamp=self.create_timestamp,
+                                                            timestamp= id_and_rev_info.get('timestamp',
+                                                                                           self.default_timestamp),
                                                             create_timestamp=self.create_timestamp,
                                                             markings=markings,
                                                             config_hooks={

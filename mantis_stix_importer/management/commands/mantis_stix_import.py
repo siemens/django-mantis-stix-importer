@@ -29,11 +29,11 @@ class Command(DingoImportCommand):
     """
 
     option_list = DingoImportCommand.option_list + (
-        make_option('-t', '--create-timestamp',
+        make_option('-t', '--default-timestamp',
                     action='store',
-                    dest='create_timestamp',
+                    dest='default_timestamp',
                     default=None,
-                    help="""Set default create timestamp."""),
+                    help="""Set default timestamp."""),
     )
 
 
