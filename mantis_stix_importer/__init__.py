@@ -15,7 +15,7 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
 RAW_DATA_TO_DB_FOR_LENGTH_LESS_THAN = 256
