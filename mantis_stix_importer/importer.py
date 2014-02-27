@@ -169,13 +169,16 @@ class STIX_Import:
 
         if 'default_timestamp' in kwargs and kwargs['default_timestamp']:
 
-            naive = parse_datetime(kwargs['default_timestamp'])
-
+            if isinstance(kwargs['default_timestamp'],basestring):
+                naive = parse_datetime(kwargs['default_timestamp'])
+            else:
+                naive = kwargs['default_timestamp']
             if not timezone.is_aware(naive):
                 aware = timezone.make_aware(naive,timezone.utc)
             else:
                 aware = naive
             self.default_timestamp = aware
+
 
         self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
 
@@ -198,6 +201,9 @@ class STIX_Import:
                                                   ns_mapping=self.namespace_dict,
                                                   embedded_predicate=self.stix_embedding_pred,
                                                   id_and_revision_extractor=self.id_and_revision_extractor)
+
+
+
 
 
         # The MANTIS/DINGOS xml importer returns then the following structure::
@@ -1358,6 +1364,10 @@ class STIX_Import:
         else:
             (namespace, namespace_uri, uid) = self.split_qname(id_and_rev_info['id'])
 
+        object_timestamp = id_and_rev_info.get('timestamp',None)
+        if not object_timestamp:
+            object_timestamp = self.default_timestamp
+
         (info_obj, existed) = MantisImporter.create_iobject(iobject_family_name=type_info['iobject_family_name'],
                                                             iobject_family_revision_name=type_info[
                                                                 'iobject_family_revision_name'],
@@ -1369,8 +1379,7 @@ class STIX_Import:
                                                             iobject_data=obj_dict,
                                                             uid=uid,
                                                             identifier_ns_uri=namespace_uri,
-                                                            timestamp= id_and_rev_info.get('timestamp',
-                                                                                           self.default_timestamp),
+                                                            timestamp= object_timestamp,
                                                             create_timestamp=self.create_timestamp,
                                                             markings=markings,
                                                             config_hooks={

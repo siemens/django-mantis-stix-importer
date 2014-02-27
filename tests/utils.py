@@ -14,7 +14,7 @@ import pprint
 
 pp = pprint.PrettyPrinter(indent=2)
 
-from dingos.models import dingos_class_map
+from dingos.models import dingos_class_map, DataTypeNameSpace
 
 
 def object_counter():
@@ -27,6 +27,13 @@ def object_counter():
     result = []
     for class_name in class_names:
         result.append((class_name, len(dingos_class_map[class_name].objects.all())))
+
+    #datatypes = DataTypeNameSpace.objects.all()
+
+    #print "Datatypes"
+    #for dtype in datatypes:
+    #    print dtype.uri
+
     return result
 
 
