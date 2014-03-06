@@ -327,7 +327,8 @@ class STIX_Import:
 
             if elt_name in ['Kill_Chain','Kill_Chain_Phase']:
                 # We chose not to attach markings to Kill_Chain information
-                del(object_markings[:])
+                #del(object_markings[:])
+                object_markings = []
             else:
                 # We mark the object with markings passed to the xml_import command
                 # and markings defined in the STIX_Package in which the object was defined.
