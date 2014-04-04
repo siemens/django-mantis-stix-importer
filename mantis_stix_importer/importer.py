@@ -382,13 +382,17 @@ class STIX_Import:
 
             if processor_class:
 
-                processor = processor_class(namespace_dict=self.namespace_dict)
+                processor = processor_class(namespace_dict=self.namespace_dict,
+                                            default_identifier_ns_uri=self.default_identifier_ns_uri,
+                                            allowed_identifier_ns_uris=self.allowed_identifier_ns_uris,
+                                            substitute_unallowed_namespaces=self.substitute_unallowed_namespaces)
 
                 processor.xml_import(self,
                                      xml_content=xml_node,
                                      markings=object_markings,
                                      identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]],
-                                     initialize_importer=False
+                                     initialize_importer=False,
+
                 )
             else:
                 logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
@@ -405,7 +409,7 @@ class STIX_Import:
 
     RE_LIST_NS_TYPE_FROM_NS_URL = [
         re.compile(
-        "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$")]
+            "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$")]
 
     # In Cybox 1.x, the object properties were encompassed in an element called "Defined_Object". In the interest
     # of equal fact terms for equal things, we rename occurrences of "Defined_Object" to "Properties" upon
@@ -843,7 +847,7 @@ class STIX_Import:
             add_fact_kargs['value_iobject_id'],created = Identifier.objects.get_or_create(uid=uid, namespace=namespace_obj)
 
 
-        # Until v2.2.1, we created placeholder objects ... but that is totally unnecessary (it originated
+        # Until v0.2.1, we created placeholder objects ... but that is totally unnecessary (it originated
         # at a stage, where we did not have a separate table for Identifiers) This has been removed.
         # The whole PLACEHOLDER-business is likely to be removed from Dingos at some point of time.
 
