@@ -163,6 +163,7 @@ class STIX_Import:
                    xml_content=None,
                    markings=None,
                    identifier_ns_uri=None,
+                   track_created_objects=False,
                    **kwargs):
         """
          Import a STIX or CybOX xml  from file <filepath> or a string passed as ``xml_content``
@@ -317,7 +318,7 @@ class STIX_Import:
             (id_and_rev_info, elt_name, elt_dict) = import_first_queue.pop()
 
 
-            (info_obj, existed) = self.iobject_import(id_and_rev_info,
+            import_dict = self.iobject_import(id_and_rev_info,
                                                       elt_name,
                                                       elt_dict)
 
@@ -329,10 +330,12 @@ class STIX_Import:
             # the STIX_Package in which an object was defined.
 
             if id_and_rev_info['inherited']['embedding_STIX_Package'] in marking_dict:
-                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']].append(info_obj)
+                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']].append(import_dict['object'])
             else:
-                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']] = [info_obj]
+                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']] = [import_dict['object']]
 
+        if track_created_objects:
+            created_object_info = deque()
 
         while pending_queue:
             # Now we start the import of the remaining embedded objects (plus the top-level object)
@@ -356,10 +359,19 @@ class STIX_Import:
 
                 object_markings = markings + marking_dict.get(embedding_STIX_Package,[])
 
-            self.iobject_import(id_and_rev_info,
-                                elt_name,
-                                elt_dict,
-                                markings=object_markings)
+            import_dict = self.iobject_import(id_and_rev_info,
+                                              elt_name,
+                                              elt_dict,
+                                              markings=object_markings)
+
+            if track_created_objects:
+                if import_dict['object'].pk:
+                    import_dict['pk'] = import_dict['object'].pk
+                else:
+                    import_dict['pk'] = None
+                del(import_dict['object'])
+
+                created_object_info.append(import_dict)
 
         # As we shall see below, we have configured the xml_importer such that
         # it recognizes OpenIOC structures embedded as test mechanism and
@@ -397,7 +409,8 @@ class STIX_Import:
             else:
                 logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
 
-
+        if track_created_objects:
+            return created_object_info
     # So, that was the main routine. Now we turn to the hooking functions used
     # for configuring the DINGOS XML importer.
 
@@ -1451,7 +1464,15 @@ class STIX_Import:
                                                             substitute_unallowed_namespaces=self.substitute_unallowed_namespaces,
         )
 
-        return (info_obj, existed)
+        result_dict = {'object': info_obj,
+                       'name': info_obj.name,
+                       'identifier_namespace_uri' : namespace_uri,
+                       'identifier_uid': uid,
+                       'iobject_type_name': type_info['iobject_type_name'],
+                       'existed' : existed}
+
+        return result_dict
+        #return (info_obj, existed)
 
 
 
