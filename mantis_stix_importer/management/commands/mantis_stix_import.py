@@ -37,7 +37,7 @@ class Command(DingoImportCommand):
     )
 
 
-    Importer = STIX_Import()
+    Importer_Class = STIX_Import
 
     help = 'Imports STIX XML files of specified paths into DINGO'
 

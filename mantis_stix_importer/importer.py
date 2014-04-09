@@ -38,7 +38,7 @@ import dingos
 
 from dingos import *
 
-from dingos.models import FactDataType, write_large_value
+from dingos.models import FactDataType, IdentifierNameSpaceSubstitutionMap, IdentifierNameSpace, write_large_value
 
 from mantis_core.models import \
     Identifier, FactValue
@@ -131,7 +131,23 @@ class STIX_Import:
 
         self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
 
-        self.default_identifier_ns_uri = None
+        if 'default_identifier_ns_uri' in kwargs:
+            self.default_identifier_ns_uri = kwargs['default_identifier_ns_uri']
+        else:
+            self.default_identifier_ns_uri = DINGOS_DEFAULT_ID_NAMESPACE_URI
+
+        if 'allowed_identifier_ns_uris' in kwargs:
+            self.allowed_identifier_ns_uris = kwargs['allowed_identifier_ns_uris']
+
+        else:
+            self.allowed_identifier_ns_uris = None
+
+        if 'substitute_unallowed_namespaces' in kwargs:
+            self.substitute_unallowed_namespaces = kwargs['substitute_unallowed_namespaces']
+
+        else:
+            self.substitute_unallowed_namespaces = False
+
 
 
 
@@ -147,6 +163,7 @@ class STIX_Import:
                    xml_content=None,
                    markings=None,
                    identifier_ns_uri=None,
+                   track_created_objects=False,
                    **kwargs):
         """
          Import a STIX or CybOX xml  from file <filepath> or a string passed as ``xml_content``
@@ -301,7 +318,7 @@ class STIX_Import:
             (id_and_rev_info, elt_name, elt_dict) = import_first_queue.pop()
 
 
-            (info_obj, existed) = self.iobject_import(id_and_rev_info,
+            import_dict = self.iobject_import(id_and_rev_info,
                                                       elt_name,
                                                       elt_dict)
 
@@ -313,10 +330,12 @@ class STIX_Import:
             # the STIX_Package in which an object was defined.
 
             if id_and_rev_info['inherited']['embedding_STIX_Package'] in marking_dict:
-                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']].append(info_obj)
+                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']].append(import_dict['object'])
             else:
-                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']] = [info_obj]
+                marking_dict[id_and_rev_info['inherited']['embedding_STIX_Package']] = [import_dict['object']]
 
+        if track_created_objects:
+            created_object_info = deque()
 
         while pending_queue:
             # Now we start the import of the remaining embedded objects (plus the top-level object)
@@ -340,10 +359,19 @@ class STIX_Import:
 
                 object_markings = markings + marking_dict.get(embedding_STIX_Package,[])
 
-            self.iobject_import(id_and_rev_info,
-                                elt_name,
-                                elt_dict,
-                                markings=object_markings)
+            import_dict = self.iobject_import(id_and_rev_info,
+                                              elt_name,
+                                              elt_dict,
+                                              markings=object_markings)
+
+            if track_created_objects:
+                if import_dict['object'].pk:
+                    import_dict['pk'] = import_dict['object'].pk
+                else:
+                    import_dict['pk'] = None
+                del(import_dict['object'])
+
+                created_object_info.append(import_dict)
 
         # As we shall see below, we have configured the xml_importer such that
         # it recognizes OpenIOC structures embedded as test mechanism and
@@ -366,18 +394,23 @@ class STIX_Import:
 
             if processor_class:
 
-                processor = processor_class(namespace_dict=self.namespace_dict)
+                processor = processor_class(namespace_dict=self.namespace_dict,
+                                            default_identifier_ns_uri=self.default_identifier_ns_uri,
+                                            allowed_identifier_ns_uris=self.allowed_identifier_ns_uris,
+                                            substitute_unallowed_namespaces=self.substitute_unallowed_namespaces)
 
                 processor.xml_import(self,
                                      xml_content=xml_node,
                                      markings=object_markings,
                                      identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]],
-                                     initialize_importer=False
+                                     initialize_importer=False,
+
                 )
             else:
                 logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
 
-
+        if track_created_objects:
+            return created_object_info
     # So, that was the main routine. Now we turn to the hooking functions used
     # for configuring the DINGOS XML importer.
 
@@ -389,7 +422,7 @@ class STIX_Import:
 
     RE_LIST_NS_TYPE_FROM_NS_URL = [
         re.compile(
-        "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$")]
+            "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$")]
 
     # In Cybox 1.x, the object properties were encompassed in an element called "Defined_Object". In the interest
     # of equal fact terms for equal things, we rename occurrences of "Defined_Object" to "Properties" upon
@@ -756,15 +789,16 @@ class STIX_Import:
         Handler for facts that contain a reference to a fact.
 
         As shown below in the handler list, this handler is called
-        when a attribute with key '@idref' on the fact's node
-        is detected -- this attribute signifies that this fact does not contain
-        a value but points to another object. Thus we either retrieve
-        the object or, if an object with the given id does not yet exist,
-        create a PLACEHOLDER object.
+        when a attribute with key '@idref' or another attribute
+        that indicates a reference is detected.
 
-        We further create/refer to the fitting fact data type:
-        we want the fact data type to express that the fact is
-        a reference to an object.
+        In case of a reference, we store the referenced object in the
+        fact. Some complexity is added in cases where we substitute
+        namespaces: an import may attempt to create an object in
+        a namespace that is not allowed for that import. In such
+        cases, we may attempt to substitute a namespace derived
+        from the default namespace for the import and the
+        desired prohibited namespace.
         """
 
         logger.debug("XXX Found reference with %s" % attr_info)
@@ -783,23 +817,60 @@ class STIX_Import:
                 return True
             else:
                 (namespace, namespace_uri, uid) = self.split_qname(fact['value'])
-
         timestamp = None
 
         if '@timestamp' in attr_info:
             timestamp = attr_info['@timestamp']
 
-        #if not timestamp:
-        #    timestamp = self.create_timestamp
+        if not self.substitute_unallowed_namespaces or namespace_uri in self.allowed_identifier_ns_uris:
+            # If no substitution is going on or the namespace is allowed, we do not have to worry
+            # and can simply set the identifier as is.
+            namespace_obj,created = IdentifierNameSpace.objects.get_or_create(uri=namespace_uri)
+            add_fact_kargs['value_iobject_id'],created = Identifier.objects.get_or_create(uid=uid, namespace=namespace_obj)
+        else:
+            # So, now we have the case that the identifier namespace is not allowed.
+            # The question now is: do we make the reference to an identifier in the substituted namespace
+            # or do we reference the identifier as given?
 
-        (target_mantis_obj, existed) = MantisImporter.create_iobject(
-            uid=uid,
-            identifier_ns_uri=namespace_uri,
-            timestamp=timestamp,
-            create_timestamp=self.default_timestamp)
 
-        logger.debug("Creation of Placeholder for %s %s returned %s" % (namespace_uri, uid, existed))
-        add_fact_kargs['value_iobject_id'] = Identifier.objects.get(uid=uid, namespace__uri=namespace_uri)
+            if '@embedded_type_info' in attr_info:
+                # A clear indicator for using the substituted namespace is if we are looking at a reference
+                # that stems from an embedding: if we have an embedding, the referenced object is created
+                # in the substituted namespace during the import.
+
+                substitution_namespace = IdentifierNameSpaceSubstitutionMap.substitute_namespace(importer_ns_uri=self.default_identifier_ns_uri,
+                                                                                                   desired_ns_uri=namespace_uri)
+                namespace_uri = substitution_namespace.uri
+            elif iobject.identifier.namespace.is_substitution:
+                # If the enclosing object has a substitution namespace, we check whether the desired namespace
+                # for that object was the same as the desired namespace for the referenced object. If so,
+                # we also substitute:
+                substitution_namespace = IdentifierNameSpaceSubstitutionMap.substitute_namespace(importer_ns_uri=self.default_identifier_ns_uri,
+                                                                                                   desired_ns_uri=namespace_uri)
+                if substitution_namespace == iobject.identifier.namespace:
+                    namespace_uri = substitution_namespace
+
+            # Otherwise, we leave the namespace as it is. This may still lead to situations, where
+            # we actually would have wanted to reference the object in the substituted namespace,
+            # but an exact decision on when to reference the original or the substituted namespace
+            # (with the aim of always referencing the substituted namespace if the import has created
+            # such an object) could only be taken after the import has been completed using bookkeeping
+            # on all created objects and all created references.
+            namespace_obj,created = IdentifierNameSpace.objects.get_or_create(uri=namespace_uri)
+            add_fact_kargs['value_iobject_id'],created = Identifier.objects.get_or_create(uid=uid, namespace=namespace_obj)
+
+
+        # Until v0.2.1, we created placeholder objects ... but that is totally unnecessary (it originated
+        # at a stage, where we did not have a separate table for Identifiers) This has been removed.
+        # The whole PLACEHOLDER-business is likely to be removed from Dingos at some point of time.
+
+        #(target_mantis_obj, existed) = MantisImporter.create_iobject(
+        #    uid=uid,
+        #    identifier_ns_uri=namespace_uri,
+        #    timestamp=timestamp,
+        #    create_timestamp=self.default_timestamp)
+        #logger.debug("Creation of Placeholder for %s %s returned %s" % (namespace_uri, uid, existed))
+
 
         return True
 
@@ -1388,9 +1459,20 @@ class STIX_Import:
                                                             'attr_ignore_predicate': self.attr_ignore_predicate,
                                                             'force_nonleaf_fact_predicate': self.force_nonleaf_fact_predicate},
                                                             namespace_dict=self.namespace_dict,
+                                                            default_identifier_ns_uri=self.default_identifier_ns_uri,
+                                                            allowed_identifier_ns_uris=self.allowed_identifier_ns_uris,
+                                                            substitute_unallowed_namespaces=self.substitute_unallowed_namespaces,
         )
 
-        return (info_obj, existed)
+        result_dict = {'object': info_obj,
+                       'name': info_obj.name,
+                       'identifier_namespace_uri' : namespace_uri,
+                       'identifier_uid': uid,
+                       'iobject_type_name': type_info['iobject_type_name'],
+                       'existed' : existed}
+
+        return result_dict
+        #return (info_obj, existed)
 
 
 
