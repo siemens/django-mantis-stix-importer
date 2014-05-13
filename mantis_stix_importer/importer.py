@@ -199,9 +199,9 @@ class STIX_Import:
 
         self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
 
-        self.default_identifier_ns_uri = None
 
-        self.default_identifier_ns_uri = identifier_ns_uri
+        if identifier_ns_uri:
+            self.default_identifier_ns_uri = identifier_ns_uri
 
         if not markings:
             markings = []
