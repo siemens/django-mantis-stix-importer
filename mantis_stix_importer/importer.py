@@ -118,7 +118,7 @@ class STIX_Import:
 
     """
 
-
+    @print_arguments()
     def __init__(self, *args, **kwargs):
 
         # The creation time stamp
@@ -164,6 +164,7 @@ class STIX_Import:
                    markings=None,
                    identifier_ns_uri=None,
                    track_created_objects=False,
+                   return_dict_repr = False,
                    **kwargs):
         """
          Import a STIX or CybOX xml  from file <filepath> or a string passed as ``xml_content``
@@ -199,9 +200,9 @@ class STIX_Import:
 
         self.namespace_dict = {None: DINGOS_NAMESPACE_URI}
 
-        self.default_identifier_ns_uri = None
 
-        self.default_identifier_ns_uri = identifier_ns_uri
+        if identifier_ns_uri:
+            self.default_identifier_ns_uri = identifier_ns_uri
 
         if not markings:
             markings = []
@@ -220,7 +221,8 @@ class STIX_Import:
                                                   id_and_revision_extractor=self.id_and_revision_extractor)
 
 
-
+        if return_dict_repr:
+            return import_result
 
 
         # The MANTIS/DINGOS xml importer returns then the following structure::
