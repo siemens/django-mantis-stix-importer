@@ -19,3 +19,77 @@ __version__ = '0.2.0'
 
 
 RAW_DATA_TO_DB_FOR_LENGTH_LESS_THAN = 256
+
+
+
+
+STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
+                                    {'STIX_Package' :
+                                         {'xlink:href': "/static/img/icons/stix.png",
+                                          'x': -15,
+                                          'y': -15,
+                                          'width': 30,
+                                          'height' : 30
+                                         },
+                                      'Incident' :
+                                         {'xlink:href': "/static/img/icons/incident.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     'Indicator' :
+                                         {'xlink:href': "/static/img/icons/indicator.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     'Campaign' :
+                                         {'xlink:href': "/static/img/icons/campaign.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     'CourseOfAction' :
+                                         {'xlink:href': "/static/img/icons/course_of_action.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     'Exploit_Target' :
+                                         {'xlink:href': "/static/img/icons/exploit_target.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                    },
+                                'cybox.mitre.org':
+                                    {'Observable' :
+                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     },
+                                'data-marking.mitre.org':
+                                    {'Marking' :
+                                         {'xlink:href': "/static/img/icons/data_marking.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     }
+
+}
+
+
+
+STIX_OBJECTTYPE_ICON_RELIST_MAPPING = {}
+
+
