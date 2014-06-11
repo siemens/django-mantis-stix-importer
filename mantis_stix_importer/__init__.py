@@ -59,6 +59,13 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                           'width': 16,
                                           'height' : 16
                                          },
+                                     'ThreatActor' :
+                                         {'xlink:href': "/static/img/icons/threat_actor.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
                                      'Exploit_Target' :
                                          {'xlink:href': "/static/img/icons/exploit_target.svg",
                                           'x': -8,
