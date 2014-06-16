@@ -52,6 +52,13 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                           'width': 16,
                                           'height' : 16
                                          },
+                                     'TTP' :
+                                         {'xlink:href': "/static/img/icons/ttp.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
                                      'CourseOfAction' :
                                          {'xlink:href': "/static/img/icons/course_of_action.svg",
                                           'x': -8,
