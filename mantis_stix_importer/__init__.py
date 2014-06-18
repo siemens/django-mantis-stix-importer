@@ -87,9 +87,23 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                           'width': 16,
                                           'height' : 16
                                          },
+                                     'Observables' :
+                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
                                     },
                                 'cybox.mitre.org':
                                     {'Observable' :
+                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     'Observables' :
                                          {'xlink:href': "/static/img/icons/observable.svg",
                                           'x': -8,
                                           'y': -8,
@@ -105,7 +119,16 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                           'width': 16,
                                           'height' : 16
                                          },
-                                     }
+                                    },
+                                'ioc.mandiant.com':
+                                    {'ioc' : 
+                                         {'xlink:href': "/static/img/icons/open_ioc.png",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
+                                     },
 
 }
 
