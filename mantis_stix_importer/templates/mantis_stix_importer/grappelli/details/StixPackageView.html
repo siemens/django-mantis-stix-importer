@@ -1,0 +1,79 @@
+{% extends "dingos/grappelli/details/base_details.html" %}
+
+{% comment %}
+Copyright (c) Siemens AG, 2013
+
+This file is part of MANTIS.  MANTIS is free software: you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2
+of the License, or(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program; if not, write to the Free Software Foundation, Inc., 51
+Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+{% endcomment %}
+
+
+{% load dingos_tags %}
+
+
+{% block content_title %}
+<h1>Info Object: <a href={% url 'url.dingos.view.infoobject' object.id %}>
+    {% if object.name == 'PLACEHOLDER' %}
+        {{object.iobject_type.name}}
+    {% else %}
+        {{object.name}}
+    {% endif %}
+  </a>
+</h1>
+{% endblock %}
+
+
+{% block content %}
+<div class= {% if customization.horizontal.dingos.view.orientation == 'horizontal' %}
+     "l-2cr-fluid l-d-15"
+     {% elif customization.horizontal.dingos.view.orientation == 'auto' %}
+     "l-2cr-responsive l-2cr-fluid l-d-15"
+     {% else %}
+     ""
+     {% endif %} >
+
+
+  <div class="c-1">
+
+    {% show_InfoObjectGraph object %}
+    {% show_InfoObjectMarkings object %}
+    {% show_AuthoringSource object %}
+    {% show_InfoObjectRevisions_vertical object %}
+    {% show_InfoObjectEmbeddings_vertical object %}
+  </div>
+
+  <div class="c-2">
+    {% show_InfoObjectIDData object %}
+    {% show_InfoObject iobject2facts=package.node.facts title="Header Info" fold_status='open' header_level=2 io2f_pred=package.filter %}
+  <h1>Indicators and associated objects</h1>
+    {%  for indicator in indicators %}
+        {% show_InfoObject iobject2facts=indicator.node.facts title=indicator.title io2f_pred=indicator.filter close_div=False header_level=2 inner_collapsible='Selected Details'%}
+        {% show_InfoObject iobject2facts=indicator.node.facts title="All Details" fold_status='closed' header_level=3 %}
+        <div class="grp-module grp-collapse grp-open">
+         <h3 class="grp-collapse-handler">Objects</h3>
+
+         {%  for obj in indicator.objects %}
+
+             {% show_InfoObject iobject2facts=obj.node.facts title=obj.title fold_status='closed' io2f_pred=obj.filter header_level=4%}
+         {% endfor %}
+       </div>
+      </div>
+    {%  endfor %}
+
+  </div>
+
+</div>
+{% endblock %}
+
+
