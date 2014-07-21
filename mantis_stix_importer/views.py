@@ -23,6 +23,32 @@ from dingos.models import InfoObject
 
 from dingos.view_classes import BasicDetailView
 
+class IndicatorView(BasicDetailView):
+
+    model = InfoObject
+
+    template_name = 'mantis_stix_importer/%s/details/IndicatorView.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Indicator'
+
+    def get_context_data(self, **kwargs):
+
+        context = super(IndicatorView, self).get_context_data(**kwargs)
+
+        context['graph'] = InfoObject.annotated_graph([self.object.pk])
+
+        context['show_datatype'] = self.request.GET.get('show_datatype',False)
+        context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
+
+        try:
+            context['highlight'] = self.request.GET['highlight']
+        except KeyError:
+            context['highlight'] = None
+
+        return context
+
+
+
 class StixPackageView(BasicDetailView):
 
     model = InfoObject
@@ -39,11 +65,15 @@ class StixPackageView(BasicDetailView):
         # Generate graph starting with this object
 
         obj_pk = self.object.id
+
         graph = InfoObject.annotated_graph([obj_pk])
 
         # get all edges that originate from this object
 
         edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
+
+
+        edges_from_top.sort(key= lambda x : x[2]['fact_node_id'])
 
         # show edges to/from top-level object in console to see what
         # they look like
@@ -67,35 +97,14 @@ class StixPackageView(BasicDetailView):
         indicator_info = []
 
         for indicator_node in indicator_nodes:
-            indicator_node_data = graph.node[indicator_node]
-            indicator_data = {'node' : indicator_node_data,
-                              'title' : "Indicator: %s" % indicator_node_data['name'] }
-
-            # calculate reachable objects
-
-            obj_pk_list = list(graph_utils.dfs_preorder_nodes(graph,
-                                                  source=int(indicator_node),
-                                                  edge_pred= (lambda x : not 'Related' in x['term'][0])
-            )
-            )
-            obj_list = []
-            for obj_pk in obj_pk_list:
-
-                obj_node_data = graph.node[obj_pk]
-                if 'Object' in obj_node_data['iobject_type']:
-                    obj_data = {'node': obj_node_data,
-                                'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
-                    obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
-                    obj_list.append(obj_data)
-
-            indicator_data['objects'] = obj_list
-            indicator_data['filter'] =  [(lambda x: 'Description' in x.fact.fact_term.term)]
-
+            indicator_data = {
+                'pk' : indicator_node,
+                }
             indicator_info.append(indicator_data)
 
         context['indicators'] = indicator_info
 
-
+        context['graph'] = graph
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)

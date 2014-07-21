@@ -28,9 +28,13 @@ from dingos.view_classes import SimpleMarkingAdditionView
 
 urlpatterns = patterns('',
 
-    url(r'^View/InfoObject/(?P<pk>\d*)/specific/stix_package$',
-        views.StixPackageView.as_view(),
-        name= "url.mantis_stix_importer.view.details.stix_package.standard"),
+                       url(r'^View/InfoObject/(?P<pk>\d*)/specific/stix_package$',
+                           views.StixPackageView.as_view(),
+                           name= "url.mantis_stix_importer.view.details.stix_package.standard"),
+
+                       url(r'^View/InfoObject/(?P<pk>\d*)/specific/indicator$',
+                           views.IndicatorView.as_view(),
+                           name= "url.mantis_stix_importer.view.details.indicator.standard"),
 
     )
 
