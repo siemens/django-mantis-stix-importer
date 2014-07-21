@@ -1,0 +1,22 @@
+
+{% load dingos_tags %}
+
+{%  if stand_alone %}
+{% show_InfoObject iobject2facts=indicator.node.facts title="Selected Details" io2f_pred=indicator.filter header_level=2 %}
+{% else %}
+{% show_InfoObject iobject2facts=indicator.node.facts title=indicator.title io2f_pred=indicator.filter close_div=False header_level=2 inner_collapsible='Selected Details'%}
+{% endif %}
+
+{% show_InfoObject iobject2facts=indicator.node.facts title="All Details" fold_status='closed' header_level=3 %}
+<div class="grp-module grp-collapse grp-open">
+    <h3 class="grp-collapse-handler">Objects</h3>
+
+    {%  for obj in indicator.objects %}
+
+        {% show_InfoObject iobject2facts=obj.node.facts title=obj.title fold_status='closed' io2f_pred=obj.filter header_level=4%}
+    {% endfor %}
+</div>
+
+{% if not stand_alone %}
+</div>
+{% endif %}
