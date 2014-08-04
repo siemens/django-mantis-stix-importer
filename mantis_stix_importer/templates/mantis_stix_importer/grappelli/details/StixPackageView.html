@@ -27,12 +27,24 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
   {% block left_column %}
     {% show_InfoObjectIDData object %}
     {% show_InfoObject iobject2facts=package.node.facts title="Header Info" fold_status='open' header_level=2 io2f_pred=package.filter %}
+
+{% if indicators %}
   <h1>Indicators and associated objects</h1>
     {%  for indicator in indicators %}
 
         {% show_Indicator graph indicator.pk %}
 
     {%  endfor %}
+{% endif %}
+
+{% if observables %}
+  <h1>Observables and associated objects</h1>
+    {%  for observable in observables %}
+
+        {% show_Observable graph observable.pk %}
+
+    {%  endfor %}
+{% endif %}
 
 
 
