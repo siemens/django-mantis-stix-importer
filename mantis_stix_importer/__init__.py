@@ -20,6 +20,8 @@ __version__ = '0.2.0'
 
 RAW_DATA_TO_DB_FOR_LENGTH_LESS_THAN = 256
 
+STIX_POSTPROCESSOR_REGISTRY = {'extract_ips':('mantis_stix_importer.postprocessors','extract_ips')}
+
 
 STIX_OBJECTTYPE_VIEW_MAPPING = {'stix.mitre.org':
                                     {'STIX_Package':'url.mantis_stix_importer.view.details.stix_package.standard',
