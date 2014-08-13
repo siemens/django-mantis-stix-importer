@@ -16,7 +16,9 @@
 #
 
 import StringIO
+import json
 import networkx
+import csv
 from dingos.models import InfoObject,InfoObject2Fact
 from dingos.core.utilities import set_dict, get_dict
 from django.core.urlresolvers import reverse
@@ -32,10 +34,9 @@ class InfoObjectDetails(object):
 
         self.iobject_map = None
         self.io2fs = []
+        self.results = []
 
         self.node_map = None
-
-
 
         if self.object_list:
             self.io2fs = self._get_io2fs(map(lambda o:o.pk,list(self.object_list)))
@@ -43,6 +44,63 @@ class InfoObjectDetails(object):
 
         elif self.graph:
             self.io2fs = self._get_io2fs(self.graph.nodes())
+
+    def export(self,*args,**kwargs):
+
+        for key in kwargs:
+            # This is a hack: the query parser does not remove enclosing quotes
+            # from a string argument. So we do it here until this issue is
+            # fixed in the query parser
+
+            if kwargs[key][0]=="'":
+                kwargs[key]=kwargs[key][1:-1]
+
+        print kwargs
+        self.extractor(**kwargs)
+
+        format = kwargs.pop('format','json')
+        output = []
+
+        if 'json' in format:
+            for result in self.results:
+                row = {}
+                if not args:
+                    columns = map(lambda x: x[1], self.default_columns)
+                else:
+                    columns = args
+                for column in columns:
+                    row[column] = result.get(column,None)
+                    output.append(row)
+
+            return ('application/json',json.dumps(output))
+        else: # default csv
+            output = StringIO.StringIO()
+            writer = csv.writer(output)
+
+            if not args:
+                columns = map(lambda x: x[0], self.default_columns)
+            else:
+                columns = args
+
+            if 'include_column_names' not in kwargs.keys() or kwargs['include_column_names'] != 'False':
+                headline = []
+                header_dict = dict(self.default_columns)
+                for column in columns:
+                    headline.append(header_dict.get(column,'UNKNOWN COLUMN'))
+                writer.writerow(headline)
+
+            for result in self.results:
+                row = []
+
+                for column in columns:
+                    row.append(result.get(column,None))
+                writer.writerow(row)
+            return('txt',output.getvalue())
+
+
+
+
+
 
 
 
@@ -129,9 +187,9 @@ class InfoObjectDetails(object):
             parent_id = node_id[0:-1]
             self_id = node_id[-1]
 
-            print parent_id
+
             sibling_dict = get_dict(self.node_map[io2f.iobject.pk],*parent_id)
-            print sibling_dict
+
             if sibling_dict:
                 for key in sibling_dict:
                     if key[0] == self_id[0] and key != self_id:
@@ -139,6 +197,9 @@ class InfoObjectDetails(object):
                         if sibling:
                             results.append(sibling)
         return results
+
+
+
 
 
 
@@ -218,6 +279,114 @@ def extract_ips(graph_or_object_list,*args,**kwargs):
                             'hash_value':hash_value.value,
                             'uri': iobject_details.iobject_map[io2f.iobject.pk]['url']})
     return ('text',"%s"% results)
+
+
+
+class hashes(InfoObjectDetails):
+
+    """
+    This class defines an exporter that extracts all information about hash values
+    from a set of CybOX objects. It makes the following columns/json-keys available:
+
+    - hash_type
+    - hash_value
+    - iobject_uri
+
+    You can all the exporter in a query as follows:
+
+    hashes(<list of columns out of columns specified above>,
+
+           hash_type = <hash_type, e.g. 'MD5'>
+
+              (if no hash_type is given, all hash types are returned)
+
+           format= 'json'/'cvs',
+
+              (default: json)
+
+           include_column_names= True/False
+
+              (Governs, whether csv output has a first header row
+               with column names.
+
+               default: True)
+
+
+    """
+
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    default_columns = [('hash_type','Hash Type'),
+        ('hash_value','Hash Value'),
+        ('iobject_url', 'URL to containing InfoObject')]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+
+    def extractor(self,**kwargs):
+
+        # extract keyword arguments that may modify result
+
+        specific_hash_type = kwargs.get('hash_type',None)
+
+        for io2f in self.io2fs:
+            #
+            # We iterate through all the facts that are contained
+            # in the set of objects with which the
+            # class was instantiated. If we wanted to
+            # operate on an object-by-object base,
+            # we could instead iterate over the following:
+            #
+            #  - self.iobject_map, which maps iobject pks to the following
+            #    information:
+            #       {'identifier_ns': <identifier namespace uri>,
+            #        'identifier_uid': <identifier uid>,
+            #        'name': <object name>,
+            #        'iobject_type': <info object type, eg.g 'WinExecutableFile'>
+            #        'iobject_type_family': <info object type family, e.g. 'cybox.mitre.org'>,
+            #        'iobject': <InfoObject instance>
+            #        'url': <url under which object can be viewed: '/mantis/View/InfoObject/<pk>/'>,
+            #        'facts': <list of InfoObject2Fact instances contained in info object>
+            #    InfoObject2Fact objects contained in the Information Object
+            # - self.graph (if a graph was passed):
+            #   A networkx-graph, where each node represents a iobject pk and
+            #   ``self.graph.node[pk]``  contains the same information
+            #   as ``self.iobject_map[pk]``.
+            #
+
+            # Hashes in CybOX are contained in a fact with fact term ending in 'Simple_Hash_Value' as
+            # follows::
+            #
+            #    (...)
+            #    <cyboxCommon:Hash>
+            #      <cyboxCommon:Type xsi:type="cyboxVocabs:HashNameVocab-1.0">MD5</cyboxCommon:Type>
+            #      <cyboxCommon:Simple_Hash_Value>a7a0390e99406f8975a1895860f55f2f</cyboxCommon:Simple_Hash_Value>
+            #    </cyboxCommon:Hash>
+            #
+
+            if 'Simple_Hash_Value' in io2f.fact.fact_term.term:
+                hash_value = io2f.fact.fact_values.all()[0]
+                # In order to find out about the hash type (if one is provided), we have
+                # to iterate through the siblings of the 'Simple_Hash_Value' element:
+                siblings = self.get_siblings(io2f)
+                for sibling in siblings:
+                    hash_type = None
+                    if 'Hash/Type' in sibling.fact_term.term:
+                        hash_type = sibling.fact_values.all()[0].value
+                        break
+
+                # We only include the hash in the list of results, if either no specific hash type
+                # has been requested, or the hash type specified in the object matches the
+                # specific hash type that was requested
+
+                if  (not specific_hash_type) or hash_type == specific_hash_type:
+                    self.results.append({'hash_type':hash_type,
+                                         'hash_value':hash_value.value,
+                                         'iobject_url': self.iobject_map[io2f.iobject.pk]['url']}
+                    )
 
 
 
