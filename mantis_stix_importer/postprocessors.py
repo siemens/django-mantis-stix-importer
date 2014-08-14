@@ -56,8 +56,8 @@ class hashes(InfoObjectDetails):
     # information is provided in the call
 
     default_columns = [('hash_type','Hash Type'),
-        ('hash_value','Hash Value'),
-        ('iobject_url', 'URL to containing InfoObject')]
+        ('hash_value','Hash Value')]
+
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -119,11 +119,16 @@ class hashes(InfoObjectDetails):
                 # has been requested, or the hash type specified in the object matches the
                 # specific hash type that was requested
 
+
+
                 if  (not specific_hash_type) or hash_type == specific_hash_type:
-                    self.results.append({'hash_type':hash_type,
-                                         'hash_value':hash_value.value,
-                                         'iobject_url': self.iobject_map[io2f.iobject.pk]['url']}
-                    )
+
+                    result_dict = self.init_result_dict(io2f)
+                    result_dict['hash_type'] = hash_type
+                    result_dict['hash_value'] = hash_value.value
+
+                    self.results.append(result_dict)
+
 
 
 
@@ -162,8 +167,7 @@ class ips(InfoObjectDetails):
 
     default_columns = [('ip','IP'),
         ('category','Category'),
-        ('condition', 'Condition'),
-        ('iobject_url', 'URL to containing InfoObject')]
+        ('condition', 'Condition')]
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -246,13 +250,12 @@ class ips(InfoObjectDetails):
                 # specific hash type that was requested
 
                 if is_ip:
-                    self.results.append({'ip': ','.join(address_values),
-                    'category' : category,
-                    'condition' : condition,
-                    'iobject_url': self.iobject_map[io2f.iobject.pk]['url']}
+                    result_dict = self.init_result_dict(io2f)
+                    result_dict['ip'] = ','.join(address_values)
+                    result_dict['category'] = category
+                    result_dict['condition'] = condition
 
-                    )
-
+                    self.results.append(result_dict)
 
 class fqdns(InfoObjectDetails):
 
@@ -326,6 +329,8 @@ class fqdns(InfoObjectDetails):
             #
             # and refer to the code indingos.models
             pass
+
+
 
         self.results =  [{'fqdn': 'THIS EXPORTER IS NOT YET IMPLEMENTED'}]
 
