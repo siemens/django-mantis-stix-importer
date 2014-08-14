@@ -31,10 +31,12 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                         'name' : 'CybOX FQDN Export'},
                                'csv': {'module': 'dingos.core.extractors',
                                         'class': 'csv_export',
-                                        'name' : 'Generic csv export'},
+                                        'name' : 'Generic CSV export',
+                                        'search_only' : True},
                                'json': {'module': 'dingos.core.extractors',
                                         'class': 'json_export',
-                                        'name' : 'Generic json export'},
+                                        'name' : 'Generic JSON export',
+                                        'search_only' : True},
                                }
 
 STIX_OBJECTTYPE_VIEW_MAPPING = {'stix.mitre.org':
