@@ -104,7 +104,7 @@ class hashes(InfoObjectDetails):
             #    </cyboxCommon:Hash>
             #
 
-            if 'Simple_Hash_Value' in io2f.fact.fact_term.term:
+            if 'Simple_Hash_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
                 hash_value = io2f.fact.fact_values.all()[0]
                 # In order to find out about the hash type (if one is provided), we have
                 # to iterate through the siblings of the 'Simple_Hash_Value' element:
