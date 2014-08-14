@@ -162,7 +162,8 @@ class ips(InfoObjectDetails):
 
     default_columns = [('ip','IP'),
         ('category','Category'),
-        ('condition', 'Condition')]
+        ('condition', 'Condition'),
+        ('iobject_url', 'URL to containing InfoObject')]
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -170,8 +171,6 @@ class ips(InfoObjectDetails):
 
     def extractor(self,**kwargs):
 
-        # extract keyword arguments that may modify result
-        self.result=[]
 
         for io2f in self.io2fs:
             #
@@ -198,15 +197,13 @@ class ips(InfoObjectDetails):
             #   as ``self.iobject_map[pk]``.
             #
 
-            # Hashes in CybOX are contained in a fact with fact term ending in 'Simple_Hash_Value' as
-            # follows::
+            # Address objects are defined follows:
             #
-            #    (...)
-            #    <cyboxCommon:Hash>
-            #      <cyboxCommon:Type xsi:type="cyboxVocabs:HashNameVocab-1.0">MD5</cyboxCommon:Type>
-            #      <cyboxCommon:Simple_Hash_Value>a7a0390e99406f8975a1895860f55f2f</cyboxCommon:Simple_Hash_Value>
-            #    </cyboxCommon:Hash>
+            #  <cybox:Properties xsi:type="AddressObject:AddressObjectType" category="ipv4-addr">
+            #                  <AddressObject:Address_Value condition='Equals'>127.0.0.1</AddressObject:Address_Value>
+            # </cybox:Properties>
             #
+
 
             if 'Address_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
                 address_values = map(lambda av : av.value, io2f.fact.fact_values.all())
@@ -235,7 +232,7 @@ class ips(InfoObjectDetails):
                     # with a regular expression, whether address value is an ip4 address
                     try:
                         checked_ip=ipaddr.IPAddress(address_values[0])
-                        category = "ip%s-addr" % checked_ip.version
+                        category = "ipv%s-addr" % checked_ip.version
                         is_ip = True
                     except ValueError:
                         category = None
@@ -256,6 +253,81 @@ class ips(InfoObjectDetails):
 
                     )
 
+
+class fqdns(InfoObjectDetails):
+
+    """
+    This class defines an exporter that extracts all information about fqdns
+    from a set of CybOX objects. It makes the following columns/json-keys available:
+
+    - fqdn
+
+    You can all the exporter in a query as follows:
+
+    fqdns(<list of columns out of columns specified above>,
+
+        format= 'json'/'cvs',
+
+           (default: json)
+
+        include_column_names= True/False
+
+              (Governs, whether csv output has a first header row
+               with column names.
+
+               default: True)
+
+
+    """
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    default_columns = [('fqdn','FQDN'),
+                       # .,..
+                       ('iobject_url', 'URL to containing InfoObject')
+                      ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+
+    def extractor(self,**kwargs):
+
+        for io2f in self.io2fs:
+            #
+            # We iterate through all the facts that are contained
+            # in the set of objects with which the
+            # class was instantiated. If we wanted to
+            # operate on an object-by-object base,
+            # we could instead iterate over the following:
+            #
+            #  - self.iobject_map, which maps iobject pks to the following
+            #    information:
+            #       {'identifier_ns': <identifier namespace uri>,
+            #        'identifier_uid': <identifier uid>,
+            #        'name': <object name>,
+            #        'iobject_type': <info object type, eg.g 'WinExecutableFile'>
+            #        'iobject_type_family': <info object type family, e.g. 'cybox.mitre.org'>,
+            #        'iobject': <InfoObject instance>
+            #        'url': <url under which object can be viewed: '/mantis/View/InfoObject/<pk>/'>,
+            #        'facts': <list of InfoObject2Fact instances contained in info object>
+            #    InfoObject2Fact objects contained in the Information Object
+            # - self.graph (if a graph was passed):
+            #   A networkx-graph, where each node represents a iobject pk and
+            #   ``self.graph.node[pk]``  contains the same information
+            #   as ``self.iobject_map[pk]``.
+            #
+
+            # In order to better understand how 'io2f's (InfoObject2Fact) and the other
+            # models relate to each other, please have a look at
+            #
+            # http://django-dingos.readthedocs.org/en/latest/_downloads/dingos_data_model.pdf
+            #
+            # and refer to the code indingos.models
+            pass
+
+        self.results =  [{'fqdn': 'THIS EXPORTER IS NOT YET IMPLEMENTED'}]
 
 
 
