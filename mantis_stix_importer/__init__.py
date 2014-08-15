@@ -37,10 +37,14 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                         'class': 'json_export',
                                         'name' : 'Generic JSON export',
                                         'search_only' : True},
+                               'table': {'module': 'dingos.core.extractors',
+                                         'class': 'table_view',
+                                        'name' : 'Table View',
+                                        'search_only' : True},
                                }
 
 STIX_OBJECTTYPE_VIEW_MAPPING = {'stix.mitre.org':
-                                    {'STIX_Package':'url.mantis_stix_importer.view.details.stix_package.standard',
+{'STI X_Package':'url.mantis_stix_importer.view.details.stix_package.standard',
                                      'Indicator':'url.mantis_stix_importer.view.details.indicator.standard'}
                                }
 

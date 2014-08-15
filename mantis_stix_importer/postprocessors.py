@@ -56,7 +56,7 @@ class hashes(InfoObjectDetails):
     # information is provided in the call
 
     default_columns = [('hash_type','Hash Type'),
-        ('hash_value','Hash Value')]
+                       ('hash_value','Hash Value')]
 
 
     # define below the extractor function that sets self.results
@@ -291,8 +291,6 @@ class fqdns(InfoObjectDetails):
     # information is provided in the call
 
     default_columns = [('fqdn','FQDN'),
-                       # .,..
-                       ('iobject_url', 'URL to containing InfoObject')
                       ]
 
     # define below the extractor function that sets self.results
@@ -331,12 +329,21 @@ class fqdns(InfoObjectDetails):
             #
             # http://django-dingos.readthedocs.org/en/latest/_downloads/dingos_data_model.pdf
             #
-            # and refer to the code indingos.models
-            pass
+            # and refer to the code in dingos.models
+
+
+            # We need to get the base dictionary from the class rather than
+            # starting with an empty dictionary -- the base dictionary is filled
+            # in with values required by the code that takes care of producing csv, json, etc.
+
+            result_dict = self.init_result_dict(io2f)
+            result_dict['fqdn'] = 'THIS EXPORTER IS NOT YET IMPLEMENTED'
+
+            self.results.append(result_dict)
+            break
 
 
 
-        self.results =  [{'fqdn': 'THIS EXPORTER IS NOT YET IMPLEMENTED'}]
 
 
 
