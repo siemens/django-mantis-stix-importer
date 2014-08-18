@@ -44,7 +44,7 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                }
 
 STIX_OBJECTTYPE_VIEW_MAPPING = {'stix.mitre.org':
-{'STI X_Package':'url.mantis_stix_importer.view.details.stix_package.standard',
+{'STIX_Package':'url.mantis_stix_importer.view.details.stix_package.standard',
                                      'Indicator':'url.mantis_stix_importer.view.details.indicator.standard'}
                                }
 
