@@ -56,8 +56,8 @@ class hashes(InfoObjectDetails):
     # information is provided in the call
 
     default_columns = [('hash_type','Hash Type'),
-        ('hash_value','Hash Value'),
-        ('iobject_url', 'URL to containing InfoObject')]
+                       ('hash_value','Hash Value')]
+
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -119,11 +119,16 @@ class hashes(InfoObjectDetails):
                 # has been requested, or the hash type specified in the object matches the
                 # specific hash type that was requested
 
+
+
                 if  (not specific_hash_type) or hash_type == specific_hash_type:
-                    self.results.append({'hash_type':hash_type,
-                                         'hash_value':hash_value.value,
-                                         'iobject_url': self.iobject_map[io2f.iobject.pk]['url']}
-                    )
+
+                    result_dict = self.init_result_dict(io2f)
+                    result_dict['hash_type'] = hash_type
+                    result_dict['hash_value'] = hash_value.value
+
+                    self.results.append(result_dict)
+
 
 
 
@@ -157,13 +162,16 @@ class ips(InfoObjectDetails):
 
     """
 
+    #
+
+
+
     # define the default columns that are output if no column
     # information is provided in the call
 
     default_columns = [('ip','IP'),
         ('category','Category'),
-        ('condition', 'Condition'),
-        ('iobject_url', 'URL to containing InfoObject')]
+        ('condition', 'Condition')]
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -246,13 +254,12 @@ class ips(InfoObjectDetails):
                 # specific hash type that was requested
 
                 if is_ip:
-                    self.results.append({'ip': ','.join(address_values),
-                    'category' : category,
-                    'condition' : condition,
-                    'iobject_url': self.iobject_map[io2f.iobject.pk]['url']}
+                    result_dict = self.init_result_dict(io2f)
+                    result_dict['ip'] = ','.join(address_values)
+                    result_dict['category'] = category
+                    result_dict['condition'] = condition
 
-                    )
-
+                    self.results.append(result_dict)
 
 class fqdns(InfoObjectDetails):
 
@@ -284,8 +291,6 @@ class fqdns(InfoObjectDetails):
     # information is provided in the call
 
     default_columns = [('fqdn','FQDN'),
-                       # .,..
-                       ('iobject_url', 'URL to containing InfoObject')
                       ]
 
     # define below the extractor function that sets self.results
@@ -324,10 +329,21 @@ class fqdns(InfoObjectDetails):
             #
             # http://django-dingos.readthedocs.org/en/latest/_downloads/dingos_data_model.pdf
             #
-            # and refer to the code indingos.models
-            pass
+            # and refer to the code in dingos.models
 
-        self.results =  [{'fqdn': 'THIS EXPORTER IS NOT YET IMPLEMENTED'}]
+
+            # We need to get the base dictionary from the class rather than
+            # starting with an empty dictionary -- the base dictionary is filled
+            # in with values required by the code that takes care of producing csv, json, etc.
+
+            result_dict = self.init_result_dict(io2f)
+            result_dict['fqdn'] = 'THIS EXPORTER IS NOT YET IMPLEMENTED'
+
+            self.results.append(result_dict)
+            break
+
+
+
 
 
 
