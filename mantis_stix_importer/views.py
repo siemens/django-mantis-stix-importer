@@ -48,6 +48,30 @@ class IndicatorView(BasicDetailView):
         return context
 
 
+class ObservableView(BasicDetailView):
+
+    model = InfoObject
+
+    template_name = 'mantis_stix_importer/%s/details/ObservableView.html' % DINGOS_TEMPLATE_FAMILY
+
+    title = 'Observable'
+
+    def get_context_data(self, **kwargs):
+
+        context = super(ObservableView, self).get_context_data(**kwargs)
+
+        context['graph'] = InfoObject.annotated_graph([self.object.pk])
+
+        context['show_datatype'] = self.request.GET.get('show_datatype',False)
+        context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
+
+        try:
+            context['highlight'] = self.request.GET['highlight']
+        except KeyError:
+            context['highlight'] = None
+
+        return context
+
 
 class StixPackageView(BasicDetailView):
 

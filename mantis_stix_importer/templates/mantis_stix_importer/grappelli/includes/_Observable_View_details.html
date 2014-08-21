@@ -1,0 +1,17 @@
+
+{% load dingos_tags %}
+
+{% if observable.objects|length == 1 %}
+
+    {% show_InfoObject iobject2facts=observable.node.facts title="Fact" fold_status='open' header_level=2 %}
+    {%  for obj in observable.objects %}
+        {% show_InfoObject iobject2facts=obj.node.facts title="Fact details: " fold_status='open' io2f_pred=obj.filter header_level=4 %}
+    {% endfor %}
+
+{% else %}
+
+    {% show_InfoObject iobject2facts=observable.node.facts title="Facts" fold_status='open' header_level=2 %}
+    {%  for obj in observable.objects %}
+        {% show_InfoObject iobject2facts=obj.node.facts title="Fact details: "|add:"a" fold_status='closed' io2f_pred=obj.filter header_level=4 %}
+    {% endfor %}
+{% endif %}

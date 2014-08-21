@@ -21,10 +21,16 @@ __version__ = '0.2.0'
 RAW_DATA_TO_DB_FOR_LENGTH_LESS_THAN = 256
 
 
-STIX_OBJECTTYPE_VIEW_MAPPING = {'stix.mitre.org':
-                                    {'STIX_Package':'url.mantis_stix_importer.view.details.stix_package.standard',
-                                     'Indicator':'url.mantis_stix_importer.view.details.indicator.standard'}
-                               }
+STIX_OBJECTTYPE_VIEW_MAPPING = {
+    'stix.mitre.org': {
+        'STIX_Package': 'url.mantis_stix_importer.view.details.stix_package.standard',
+        'Indicator':    'url.mantis_stix_importer.view.details.indicator.standard',
+        'Observable':   'url.mantis_stix_importer.view.details.observable.standard'
+    },
+    'cybox.mitre.org': {
+        'Observable':   'url.mantis_stix_importer.view.details.observable.standard'
+    },
+}
 
 STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                     {'STIX_Package' :

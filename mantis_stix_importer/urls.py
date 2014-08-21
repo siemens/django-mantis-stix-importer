@@ -36,5 +36,9 @@ urlpatterns = patterns('',
                            views.IndicatorView.as_view(),
                            name= "url.mantis_stix_importer.view.details.indicator.standard"),
 
+                       url(r'^View/InfoObject/(?P<pk>\d*)/specific/observable$',
+                           views.ObservableView.as_view(),
+                           name="url.mantis_stix_importer.view.details.observable.standard"),
+
     )
 
