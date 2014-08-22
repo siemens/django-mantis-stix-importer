@@ -92,8 +92,8 @@ class StixPackageView(BasicDetailView):
 
         # extract nodes that are 'Indicators'
         indicator_nodes =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
-        print "Indicator Nodes"
-        print indicator_nodes
+        # print "Indicator Nodes"
+        # print indicator_nodes
         indicator_info = []
 
         for indicator_node in indicator_nodes:
@@ -108,9 +108,9 @@ class StixPackageView(BasicDetailView):
         # extract nodes that are 'Observables'
         observable_nodes =  [e[1] for e in edges_from_top if "Observable" in e[2]['term'][0]]
 
-        print "Observable NOdes"
-        print edges_from_top
-        print observable_nodes
+        # print "Observable NOdes"
+        # print edges_from_top
+        # print observable_nodes
         observable_info = []
 
         for observable_node in observable_nodes:
