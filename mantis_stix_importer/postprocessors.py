@@ -299,15 +299,9 @@ class fqdns(InfoObjectDetails):
             for fact in iobject.facts.all():
                 value = fact.fact_values.all()[0].value
 
-                # todo: cybox.mitre.org:DomainObject
-
-                # cybox.mitre.org:URIObject
-                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
-                    iobject.iobject_type.name == 'URIObject'):
-                    if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
-                        result_dict['condition'] = value
-                    else:
-                        result_dict['fqdn'] = value
+                # todo:
+                # cybox.mitre.org:DomainObject ???
+                # cybox.mitre.org:HostnameObject
 
                 # cybox.mitre.org:DomainNameObject
                 if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
@@ -318,11 +312,20 @@ class fqdns(InfoObjectDetails):
                 # cybox.mitre.org:LinkObject
                 if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
                     iobject.iobject_type.name == 'LinkObject'):
-                    print "link object"
                     if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
                         result_dict['condition'] = value
                     else:
                         result_dict['fqdn'] = value
 
-            if result_dict['condition'] and result_dict['fqdn']:
+                # cybox.mitre.org:URIObject
+                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
+                    iobject.iobject_type.name == 'URIObject'):
+                    if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
+                        result_dict['condition'] = value
+                    else:
+                        result_dict['fqdn'] = value
+
+            # only add if a fqdn is found and it does not already exist in list
+            if (result_dict['fqdn'] and
+                result_dict['fqdn'] not in [x['fqdn'] for x in self.results]):
                 self.results.append(result_dict)
