@@ -261,90 +261,73 @@ class ips(InfoObjectDetails):
 
                     self.results.append(result_dict)
 
-class fqdns(InfoObjectDetails):
 
+class fqdns(InfoObjectDetails):
     """
     This class defines an exporter that extracts all information about fqdns
     from a set of CybOX objects. It makes the following columns/json-keys available:
-
     - fqdn
 
     You can all the exporter in a query as follows:
-
     fqdns(<list of columns out of columns specified above>,
-
         format= 'json'/'cvs',
-
            (default: json)
-
         include_column_names= True/False
-
               (Governs, whether csv output has a first header row
                with column names.
-
                default: True)
-
-
     """
 
     # define the default columns that are output if no column
     # information is provided in the call
-
-    default_columns = [('fqdn','FQDN'),
-                      ]
+    default_columns = [
+        ('fqdn', 'FQDN'),
+        ('condition', 'Condition'),
+        ('infoobject_id', 'InfoObject ID'),
+    ]
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
     # values extracted from the information objects
+    def extractor(self, **kwargs):
 
-    def extractor(self,**kwargs):
+        for iobject_pk, iobject_dict in self.iobject_map.items():
+            iobject = iobject_dict['iobject']
+            result_dict = self.init_result_dict(iobject)
+            result_dict['infoobject_id'] = iobject_pk
+            result_dict['condition'] = ''
+            result_dict['fqdn'] = ''
 
-        for io2f in self.io2fs:
-            #
-            # We iterate through all the facts that are contained
-            # in the set of objects with which the
-            # class was instantiated. If we wanted to
-            # operate on an object-by-object base,
-            # we could instead iterate over the following:
-            #
-            #  - self.iobject_map, which maps iobject pks to the following
-            #    information:
-            #       {'identifier_ns': <identifier namespace uri>,
-            #        'identifier_uid': <identifier uid>,
-            #        'name': <object name>,
-            #        'iobject_type': <info object type, eg.g 'WinExecutableFile'>
-            #        'iobject_type_family': <info object type family, e.g. 'cybox.mitre.org'>,
-            #        'iobject': <InfoObject instance>
-            #        'url': <url under which object can be viewed: '/mantis/View/InfoObject/<pk>/'>,
-            #        'facts': <list of InfoObject2Fact instances contained in info object>
-            #    InfoObject2Fact objects contained in the Information Object
-            # - self.graph (if a graph was passed):
-            #   A networkx-graph, where each node represents a iobject pk and
-            #   ``self.graph.node[pk]``  contains the same information
-            #   as ``self.iobject_map[pk]``.
-            #
+            for fact in iobject.facts.all():
+                value = fact.fact_values.all()[0].value
 
-            # In order to better understand how 'io2f's (InfoObject2Fact) and the other
-            # models relate to each other, please have a look at
-            #
-            # http://django-dingos.readthedocs.org/en/latest/_downloads/dingos_data_model.pdf
-            #
-            # and refer to the code in dingos.models
+                # todo:
+                # cybox.mitre.org:DomainObject ??? old
+                # cybox.mitre.org:HostnameObject
 
+                # cybox.mitre.org:DomainNameObject
+                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
+                    iobject.iobject_type.name == 'DomainNameObject' and
+                    fact.fact_term.term == 'Properties/Value'):
+                    result_dict['fqdn'] = value
 
-            # We need to get the base dictionary from the class rather than
-            # starting with an empty dictionary -- the base dictionary is filled
-            # in with values required by the code that takes care of producing csv, json, etc.
+                # cybox.mitre.org:LinkObject
+                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
+                    iobject.iobject_type.name == 'LinkObject'):
+                    if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
+                        result_dict['condition'] = value
+                    else:
+                        result_dict['fqdn'] = value
 
-            result_dict = self.init_result_dict(io2f)
-            result_dict['fqdn'] = 'THIS EXPORTER IS NOT YET IMPLEMENTED'
+                # cybox.mitre.org:URIObject
+                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
+                    iobject.iobject_type.name == 'URIObject'):
+                    if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
+                        result_dict['condition'] = value
+                    else:
+                        result_dict['fqdn'] = value
 
-            self.results.append(result_dict)
-            break
-
-
-
-
-
-
-
+            # only add if a fqdn is found and it does not already exist in list
+            if (result_dict['fqdn'] and
+                result_dict['infoobject_id'] not in [x['infoobject_id'] for x in self.results]):
+                self.results.append(result_dict)
