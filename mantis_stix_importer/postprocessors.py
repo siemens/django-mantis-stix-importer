@@ -283,6 +283,7 @@ class fqdns(InfoObjectDetails):
     default_columns = [
         ('fqdn', 'FQDN'),
         ('condition', 'Condition'),
+        ('infoobject_id', 'InfoObject ID'),
     ]
 
     # define below the extractor function that sets self.results
@@ -293,6 +294,7 @@ class fqdns(InfoObjectDetails):
         for iobject_pk, iobject_dict in self.iobject_map.items():
             iobject = iobject_dict['iobject']
             result_dict = self.init_result_dict(iobject)
+            result_dict['infoobject_id'] = iobject_pk
             result_dict['condition'] = ''
             result_dict['fqdn'] = ''
 
@@ -300,7 +302,7 @@ class fqdns(InfoObjectDetails):
                 value = fact.fact_values.all()[0].value
 
                 # todo:
-                # cybox.mitre.org:DomainObject ???
+                # cybox.mitre.org:DomainObject ??? old
                 # cybox.mitre.org:HostnameObject
 
                 # cybox.mitre.org:DomainNameObject
@@ -327,5 +329,5 @@ class fqdns(InfoObjectDetails):
 
             # only add if a fqdn is found and it does not already exist in list
             if (result_dict['fqdn'] and
-                result_dict['fqdn'] not in [x['fqdn'] for x in self.results]):
+                result_dict['infoobject_id'] not in [x['infoobject_id'] for x in self.results]):
                 self.results.append(result_dict)
