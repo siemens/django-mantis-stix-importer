@@ -20,6 +20,28 @@ __version__ = '0.2.0'
 
 RAW_DATA_TO_DB_FOR_LENGTH_LESS_THAN = 256
 
+STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postprocessors',
+                                         'class' : 'hashes',
+                                         'name' : 'CybOX Hash Value Export'},
+                               'ips':{'module': 'mantis_stix_importer.postprocessors',
+                                      'class': 'ips',
+                                      'name' : 'CybOX IP Export'},
+                               'fqdns':{'module': 'mantis_stix_importer.postprocessors',
+                                        'class': 'fqdns',
+                                        'name' : 'CybOX FQDN Export'},
+                               'csv': {'module': 'dingos.core.extractors',
+                                        'class': 'csv_export',
+                                        'name' : 'Generic CSV export',
+                                        'search_only' : True},
+                               'json': {'module': 'dingos.core.extractors',
+                                        'class': 'json_export',
+                                        'name' : 'Generic JSON export',
+                                        'search_only' : True},
+                               'table': {'module': 'dingos.core.extractors',
+                                         'class': 'table_view',
+                                        'name' : 'Table View',
+                                        'search_only' : True},
+                               }
 
 STIX_OBJECTTYPE_VIEW_MAPPING = {
     'stix.mitre.org': {
@@ -31,6 +53,7 @@ STIX_OBJECTTYPE_VIEW_MAPPING = {
         'Observable':   'url.mantis_stix_importer.view.details.observable.standard'
     },
 }
+
 
 STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                     {'STIX_Package' :

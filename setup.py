@@ -36,6 +36,7 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
+        "ipaddr>=2.1.11",
         "django>=1.5.5",
         "django-dingos>=0.1.0",
         "django-mantis-core>=0.1.0",
