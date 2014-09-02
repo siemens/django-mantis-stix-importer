@@ -17,13 +17,14 @@
 
 from django import template
 
-
 from dingos import DINGOS_TEMPLATE_FAMILY
+from dingos import graph_utils
+from mantis_stix_importer import STIX_OBJECTTYPE_ICON_MAPPING
 
 
 register = template.Library()
 
-from dingos import graph_utils
+
 
 # Below we register template tags that display
 # certain aspects of an InformationObject.
@@ -118,3 +119,15 @@ def show_ObservableDetails(context,graph, observable_node, stand_alone=False):
     context['stand_alone'] = stand_alone
 
     return context
+
+
+@register.simple_tag
+def get_StixIcon(icon_name):
+    """
+    Returns the icon for a icon_name. Return first found icon name
+    """
+    for ns, icon_ns in STIX_OBJECTTYPE_ICON_MAPPING.iteritems():
+        for icon, icon_prop in icon_ns.iteritems():
+            if icon==icon_name:
+                return icon_prop['xlink:href']
+    return ''

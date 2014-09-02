@@ -57,70 +57,70 @@ STIX_OBJECTTYPE_VIEW_MAPPING = {
 
 STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                     {'STIX_Package' :
-                                         {'xlink:href': "/static/img/icons/stix.png",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/stix.png",
                                           'x': -15,
                                           'y': -15,
                                           'width': 30,
                                           'height' : 30
                                          },
                                       'Incident' :
-                                         {'xlink:href': "/static/img/icons/incident.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/incident.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'Indicator' :
-                                         {'xlink:href': "/static/img/icons/indicator.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/indicator.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'Campaign' :
-                                         {'xlink:href': "/static/img/icons/campaign.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/campaign.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'TTP' :
-                                         {'xlink:href': "/static/img/icons/ttp.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/ttp.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'CourseOfAction' :
-                                         {'xlink:href': "/static/img/icons/course_of_action.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/course_of_action.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'ThreatActor' :
-                                         {'xlink:href': "/static/img/icons/threat_actor.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/threat_actor.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'Exploit_Target' :
-                                         {'xlink:href': "/static/img/icons/exploit_target.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/exploit_target.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'Observable' :
-                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/observable.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'Observables' :
-                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/observable.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
@@ -129,14 +129,14 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                     },
                                 'cybox.mitre.org':
                                     {'Observable' :
-                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/observable.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
                                           'height' : 16
                                          },
                                      'Observables' :
-                                         {'xlink:href': "/static/img/icons/observable.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/observable.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
@@ -145,7 +145,7 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                      },
                                 'data-marking.mitre.org':
                                     {'Marking' :
-                                         {'xlink:href': "/static/img/icons/data_marking.svg",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/data_marking.svg",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
@@ -154,7 +154,7 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                     },
                                 'ioc.mandiant.com':
                                     {'ioc' : 
-                                         {'xlink:href': "/static/img/icons/open_ioc.png",
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/open_ioc.png",
                                           'x': -8,
                                           'y': -8,
                                           'width': 16,
