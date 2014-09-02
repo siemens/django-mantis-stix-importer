@@ -122,10 +122,15 @@ def show_ObservableDetails(context,graph, observable_node, stand_alone=False):
 
 
 @register.simple_tag
-def get_StixIcon(icon_name):
+def get_StixIcon(icon_name, icon_namespace=False):
     """
     Returns the icon for a icon_name. Return first found icon name
     """
+
+    if icon_namespace and icon_namespace in STIX_OBJECTTYPE_ICON_MAPPING:
+        el = STIX_OBJECTTYPE_ICON_MAPPING[icon_namespace].get(icon_name, {})
+        return el.get('xlink:href', '')
+
     for ns, icon_ns in STIX_OBJECTTYPE_ICON_MAPPING.iteritems():
         for icon, icon_prop in icon_ns.iteritems():
             if icon==icon_name:
