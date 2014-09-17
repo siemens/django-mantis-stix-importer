@@ -20,34 +20,31 @@ def process(graph):
     Merges Observables with the connected InfoObjects if only one InfoObject is referenced by the affected Observable
     """
 
-    loop = True
-    while loop:
-        # Collect unnecessary Observables
-        observables = {}
-        for node in graph.nodes():
-            if 'Observable' in graph.node[node]['iobject_type']:
-                if graph.out_degree(node) == 1:
+    # Collect unnecessary Observables
+    observables = {}
+    for node in graph.nodes():
+        if 'Observable' in graph.node[node]['iobject_type']:
+            if graph.out_degree(node) == 1:
+                outgoing_edge = graph.out_edges(node)[0]
+                if not 'Observable' in graph.node[outgoing_edge[1]]['iobject_type']:
                     observables[node] = {}
                     observables[node]['outgoing_edge'] = graph.out_edges(node)[0]
                     observables[node]['ingoing_edges'] = graph.in_edges(node)
 
-        # Add new and delete unnecessary references
-        for key in observables.keys():
-            observable = observables[key]
-            outgoing_edge = observable['outgoing_edge']
-            for ingoing_edge in observable['ingoing_edges']:
-                # Add bridge from incoming to outgoing neighbor of Observable
-                graph.add_edge(ingoing_edge[0], outgoing_edge[1])
-                # Remove old connection of observable
-                graph.remove_edge(ingoing_edge[0], ingoing_edge[1])
+    # Add new and delete unnecessary references
+    for key in observables.keys():
+        observable = observables[key]
+        outgoing_edge = observable['outgoing_edge']
+        for ingoing_edge in observable['ingoing_edges']:
+            # Add bridge from incoming to outgoing neighbor of Observable
+            graph.add_edge(ingoing_edge[0], outgoing_edge[1])
+            # Remove old connection of observable
+            graph.remove_edge(ingoing_edge[0], ingoing_edge[1])
 
-        # Delete unnecessary Observables
-        loop = False
-        for node in graph.nodes():
-            if 'Observable' in graph.node[node]['iobject_type']:
-                if len(graph.in_edges(node)) == 0:
-                    graph.remove_node(node)
-                else:
-                    loop = True
+    # Delete unnecessary Observables
+    for node in graph.nodes():
+        if 'Observable' in graph.node[node]['iobject_type']:
+            if len(graph.in_edges(node)) == 0:
+                graph.remove_node(node)
 
     return graph
