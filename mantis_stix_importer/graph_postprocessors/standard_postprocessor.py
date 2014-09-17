@@ -15,6 +15,8 @@
 # Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from dingos.graph_traversal import derive_image_info
+
 def process(graph):
     """
     Merges Observables with the connected InfoObjects if only one InfoObject is referenced by the affected Observable
@@ -38,6 +40,8 @@ def process(graph):
         for ingoing_edge in observable['ingoing_edges']:
             # Add bridge from incoming to outgoing neighbor of Observable
             graph.add_edge(ingoing_edge[0], outgoing_edge[1])
+            graph.node[outgoing_edge[1]]['iobject_type'] = 'Observable_Mix'
+            graph.node[outgoing_edge[1]]['image'] = derive_image_info(graph.node[outgoing_edge[1]])
             # Remove old connection of observable
             graph.remove_edge(ingoing_edge[0], ingoing_edge[1])
 

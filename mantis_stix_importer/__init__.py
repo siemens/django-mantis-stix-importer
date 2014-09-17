@@ -135,6 +135,13 @@ STIX_OBJECTTYPE_ICON_MAPPING = {'stix.mitre.org':
                                           'width': 16,
                                           'height' : 16
                                          },
+                                     'Observable_Mix' :
+                                         {'xlink:href': "/static/mantis_stix_importer/img/icons/observable_mix.svg",
+                                          'x': -8,
+                                          'y': -8,
+                                          'width': 16,
+                                          'height' : 16
+                                         },
                                      'Observables' :
                                          {'xlink:href': "/static/mantis_stix_importer/img/icons/observable.svg",
                                           'x': -8,
