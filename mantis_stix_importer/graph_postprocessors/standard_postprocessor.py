@@ -28,7 +28,7 @@ def process(graph):
         if 'Observable' in graph.node[node]['iobject_type']:
             if graph.out_degree(node) == 1:
                 outgoing_edge = graph.out_edges(node)[0]
-                if not 'Observable' in graph.node[outgoing_edge[1]]['iobject_type']:
+                if 'Object' in graph.node[outgoing_edge[1]]['iobject_type']:
                     observables[node] = {}
                     observables[node]['outgoing_edge'] = graph.out_edges(node)[0]
                     observables[node]['ingoing_edges'] = graph.in_edges(node)
@@ -40,7 +40,7 @@ def process(graph):
         for ingoing_edge in observable['ingoing_edges']:
             # Add bridge from incoming to outgoing neighbor of Observable
             graph.add_edge(ingoing_edge[0], outgoing_edge[1])
-            graph.node[outgoing_edge[1]]['iobject_type'] = 'Observable_Mix'
+            graph.node[outgoing_edge[1]]['iobject_type'] = 'Observable_w_single_obj'
             graph.node[outgoing_edge[1]]['image'] = derive_image_info(graph.node[outgoing_edge[1]])
             # Remove old connection of observable
             graph.remove_edge(ingoing_edge[0], ingoing_edge[1])
