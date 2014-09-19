@@ -112,39 +112,37 @@ class StixPackageView(BasicDetailView):
         context['package'] = {'node' : package_node_data,
                               'filter' : [(lambda x: 'STIX_Header' in x.fact.fact_term.term)]}
 
-
-
-        # extract nodes that are 'Indicators'
-        indicator_nodes =  [e[1] for e in edges_from_top if "Indicator" in e[2]['term'][0]]
-        # print "Indicator Nodes"
-        # print indicator_nodes
-        indicator_info = []
-
-        for indicator_node in indicator_nodes:
-            indicator_data = {
-                'pk' : indicator_node,
-                }
-            indicator_info.append(indicator_data)
-
-        context['indicators'] = indicator_info
-
-
-        # extract nodes that are 'Observables'
-        observable_nodes =  [e[1] for e in edges_from_top if "Observable" in e[2]['term'][0]]
-
-        # print "Observable NOdes"
-        # print edges_from_top
-        # print observable_nodes
+        # extract cyber threat information nodes
         observable_info = []
-
-        for observable_node in observable_nodes:
-            observable_data = {
-                'pk' : observable_node,
-                }
-            observable_info.append(observable_data)
-
+        indicator_info = []
+        ttp_info = []
+        incident_info = []
+        course_of_action_info = []
+        campaign_info = []
+        threat_actor_info = []
+        for e in edges_from_top:
+            data = {'pk': e[1]}
+            if "Observable" in e[2]['term'][0]:
+                observable_info.append(data)
+            elif "Indicator" in e[2]['term'][0]:
+                indicator_info.append(data)
+            elif "TTP" in e[2]['term'][0]: #todo
+                ttp_info.append(data)
+            elif "Incident" in e[2]['term'][0]: #todo
+                incident_info.append(data)
+            elif "Course_Of_Action" in e[2]['term'][0]: #todo
+                course_of_action_info.append(data)
+            elif "Campaign" in e[2]['term'][0]: #todo
+                campaign_info.append(data)
+            elif "Threat_Actor" in e[2]['term'][0]:
+                threat_actor_info.append(data)
         context['observables'] = observable_info
-
+        context['indicators'] = indicator_info
+        context['ttps'] = ttp_info
+        context['incidents'] = incident_info
+        context['courses_of_action'] = course_of_action_info
+        context['campaigns'] = campaign_info
+        context['threat_actors'] = threat_actor_info
 
         context['graph'] = graph
 
@@ -157,4 +155,3 @@ class StixPackageView(BasicDetailView):
             context['highlight'] = None
 
         return context
-
