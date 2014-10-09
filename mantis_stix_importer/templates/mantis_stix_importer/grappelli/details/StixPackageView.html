@@ -46,6 +46,41 @@ Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
     {%  endfor %}
 {% endif %}
 
+{% if ttps %}
+  <h1>TTPs</h1>
+    {%  for ttp in ttps %}
+        {% show_TTP graph ttp.pk %}
+    {%  endfor %}
+{% endif %}
+
+{% if incidents %}
+  <h1>Incidents</h1>
+    {%  for incident in incidents %}
+        {% show_Incident graph incident.pk %}
+    {%  endfor %}
+{% endif %}
+
+{% if courses_of_action %}
+  <h1>Courses of action</h1>
+    {%  for course_of_action in courses_of_action %}
+        {% show_Course_Of_Action graph course_of_action.pk %}
+    {%  endfor %}
+{% endif %}
+
+{% if campaigns %}
+  <h1>Campaigns</h1>
+    {%  for campaign in campaigns %}
+        {% show_Campaign graph campaign.pk %}
+    {%  endfor %}
+{% endif %}
+
+{% if threat_actors %}
+  <h1>Threat actors</h1>
+    {%  for actor in threat_actors %}
+        {% show_Threat_Actor graph actor.pk %}
+    {%  endfor %}
+{% endif %}
+
 
 
 

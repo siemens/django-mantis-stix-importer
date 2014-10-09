@@ -59,13 +59,82 @@ def show_Indicator(context,graph,
     context['stand_alone'] = stand_alone
     return context
 
+@register.inclusion_tag('mantis_stix_importer/%s/includes/_TTP_View_standard.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_TTP(context,graph,
+             ttp_node,
+             stand_alone=False):
+    ttp_node_data = graph.node[ttp_node]
+    ttp_data = {'node' : ttp_node_data,
+                         'title' : "TTP: %s" % ttp_node_data['name'] }
+    ttp_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+
+    context['ttp'] = ttp_data
+    context['stand_alone'] = stand_alone
+    return context
+
+@register.inclusion_tag('mantis_stix_importer/%s/includes/_Incident_View_standard.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_Incident(context,graph,
+             incident_node,
+             stand_alone=False):
+    incident_node_data = graph.node[incident_node]
+    incident_data = {'node' : incident_node_data,
+                         'title' : "Incident: %s" % incident_node_data['name'] }
+    incident_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+
+    context['incident'] = incident_data
+    context['stand_alone'] = stand_alone
+    return context
+
+@register.inclusion_tag('mantis_stix_importer/%s/includes/_Course_Of_Action_View_standard.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_Course_Of_Action(context,graph,
+             course_of_action_node,
+             stand_alone=False):
+    course_of_action_node_data = graph.node[course_of_action_node]
+    course_of_action_data = {'node' : course_of_action_node_data,
+                         'title' : "Course of action: %s" % course_of_action_node_data['name'] }
+    course_of_action_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+
+    context['course_of_action'] = course_of_action_data
+    context['stand_alone'] = stand_alone
+    return context
+
+@register.inclusion_tag('mantis_stix_importer/%s/includes/_Campaign_View_standard.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_Campaign(context,graph,
+             campaign_node,
+             stand_alone=False):
+    campaign_node_data = graph.node[campaign_node]
+    campaign_data = {'node' : campaign_node_data,
+                         'title' : "Campaign: %s" % campaign_node_data['name'] }
+    campaign_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+
+    context['campaign'] = campaign_data
+    context['stand_alone'] = stand_alone
+    return context
+
+@register.inclusion_tag('mantis_stix_importer/%s/includes/_Threat_Actor_View_standard.html'% DINGOS_TEMPLATE_FAMILY, takes_context=True)
+def show_Threat_Actor(context,graph,
+                      threat_actor_node,
+                      stand_alone=False):
+    threat_actor_node_data = graph.node[threat_actor_node]
+    threat_actor_data = {'node' : threat_actor_node_data,
+                         'title' : "Threat actor: %s" % threat_actor_node_data['name'] }
+    threat_actor_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+
+    context['threat_actor'] = threat_actor_data
+    context['stand_alone'] = stand_alone
+    return context
+
 @register.inclusion_tag('mantis_stix_importer/%s/includes/_Observable_View_standard.html'% DINGOS_TEMPLATE_FAMILY,takes_context=True)
 def show_Observable(context,graph,
                    observable_node,
                    stand_alone=False):
     observable_node_data = graph.node[observable_node]
-    observable_data = {'node' : observable_node_data,
-                      'title' : "%s" % observable_node_data['name'] }
+    observable_data = {'node' : observable_node_data}
+
+    if observable_node_data['name']:
+        observable_data['title'] = "%s" % observable_node_data['name']
+    else:
+        observable_data['title'] = observable_node_data['identifier_uid']
 
     obj_pk_list = list(graph_utils.dfs_preorder_nodes(graph,
                                                       source=int(observable_node),
