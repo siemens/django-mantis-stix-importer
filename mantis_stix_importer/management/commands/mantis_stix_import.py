@@ -16,19 +16,19 @@
 #
 
 
-from dingos.importer import DingoImportCommand
+from dingos_authoring.importer import DingosAuthoringImportCommand
 from mantis_stix_importer.importer import STIX_Import
 from optparse import make_option
 
 
 
-class Command(DingoImportCommand):
+class Command(DingosAuthoringImportCommand):
     """
     This class implements the command for importing a OpenIOC XML
     files into DINGO.
     """
 
-    option_list = DingoImportCommand.option_list + (
+    option_list = DingosAuthoringImportCommand.option_list + (
         make_option('-t', '--default-timestamp',
                     action='store',
                     dest='default_timestamp',
@@ -39,5 +39,5 @@ class Command(DingoImportCommand):
 
     Importer_Class = STIX_Import
 
-    help = 'Imports STIX XML files of specified paths into DINGO'
+    help = 'Imports STIX XML files of specified paths into DINGOS'
 

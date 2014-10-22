@@ -412,7 +412,15 @@ class STIX_Import:
                 logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
 
         if track_created_objects:
-            return created_object_info
+            import_result['created_objects_info'] = created_object_info
+        else:
+            import_result['created_objects_info'] = None
+
+
+
+        return import_result
+
+
     # So, that was the main routine. Now we turn to the hooking functions used
     # for configuring the DINGOS XML importer.
 
