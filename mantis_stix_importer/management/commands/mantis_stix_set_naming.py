@@ -688,6 +688,7 @@ schema_list = [
         "cybox.mitre.org", 
         "http://cybox.mitre.org/cybox", 
         [
+            "[Title]"
             "[fact_count_equal_1?] Object: [Object] ",
             "[fact_count_equal_1?] Event: [Event] ",
             "[Observable_Composition@operator] (... ([fact_count] facts)"
@@ -722,7 +723,7 @@ schema_list = [
         "ThreatActor", 
         "stix.mitre.org", 
         "http://stix.mitre.org/ThreatActor", 
-        [
+        [   "[Title]",
             "[Identity/Specification/PartyName/OrganisationName/NameElement]", 
             "[Identity/Name]", 
             "[Identity/Specification/PartyName/PersonName/NameElement]"
@@ -770,7 +771,7 @@ schema_list = [
         "Observable", 
         "stix.mitre.org", 
         "http://stix.mitre.org/Indicator", 
-        [
+        [   "[Title]"
             "[fact_count_equal_1?] Object: [Object] ",
             "[fact_count_equal_1?] Event: [Event] ",
             "[Observable_Composition@operator] (... ([fact_count] facts)"
@@ -786,7 +787,8 @@ schema_list = [
         "Campaign", 
         "stix.mitre.org", 
         "http://stix.mitre.org/Campaign", 
-        []
+        ["[Title]",
+         "[Names/Name]"]
     ], 
     [
         "Identity", 
