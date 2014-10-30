@@ -56,7 +56,9 @@ class hashes(InfoObjectDetails):
     # information is provided in the call
 
     default_columns = [('hash_type','Hash Type'),
-                       ('hash_value','Hash Value')]
+                       ('hash_value','Hash Value'),
+                       ('iobject_url', 'InfoObject URL'),
+                       ]
 
 
     # define below the extractor function that sets self.results
@@ -69,10 +71,10 @@ class hashes(InfoObjectDetails):
 
         specific_hash_type = kwargs.get('hash_type',None)
 
+
         for io2f in self.io2fs:
             #
             # We iterate through all the facts that are contained
-            # in the set of objects with which the
             # class was instantiated. If we wanted to
             # operate on an object-by-object base,
             # we could instead iterate over the following:
@@ -105,7 +107,7 @@ class hashes(InfoObjectDetails):
             #
 
             if 'Simple_Hash_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
-                hash_value = io2f.fact.fact_values.all()[0]
+                hash_values = map(lambda av : av.value, io2f.fact.fact_values.all())
                 # In order to find out about the hash type (if one is provided), we have
                 # to iterate through the siblings of the 'Simple_Hash_Value' element:
                 siblings = self.get_siblings(io2f)
@@ -121,13 +123,14 @@ class hashes(InfoObjectDetails):
 
 
 
-                if  (not specific_hash_type) or hash_type == specific_hash_type:
-
+                if  (not specific_hash_type) or hash_type in specific_hash_type:
                     result_dict = self.init_result_dict(io2f)
                     result_dict['hash_type'] = hash_type
-                    result_dict['hash_value'] = hash_value.value
 
-                    self.results.append(result_dict)
+                    for value in hash_values:
+                        result = result_dict.copy()
+                        result['hash_value'] = value
+                        self.results.append(result)
 
 
 
@@ -171,7 +174,10 @@ class ips(InfoObjectDetails):
 
     default_columns = [('ip','IP'),
         ('category','Category'),
-        ('condition', 'Condition')]
+        ('condition', 'Condition'),
+        ('apply_condition', 'Apply Condition'),
+        ('iobject_url', 'InfoObject URL'),
+        ]
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -231,9 +237,11 @@ class ips(InfoObjectDetails):
                 # the attribute to the most distant one
 
 
-                category = attributes.get('category',[(None,None)])[0][0]
+                category = attributes.get('category',[('',None)])[0][0]
 
-                condition = attributes.get('condition',[(None,None)])[0][0]
+                condition = attributes.get('condition',[('',None)])[0][0]
+
+                apply_condition = attributes.get('condition',[('',None)])[0][0]
 
                 if not category:
                     # Damn, no category information is provided, so we have to check
@@ -255,11 +263,20 @@ class ips(InfoObjectDetails):
 
                 if is_ip:
                     result_dict = self.init_result_dict(io2f)
-                    result_dict['ip'] = ','.join(address_values)
                     result_dict['category'] = category
                     result_dict['condition'] = condition
+                    result_dict['apply_condition'] = apply_condition
 
-                    self.results.append(result_dict)
+                    if apply_condition and apply_condition == 'ALL':
+                        address_values = [",".join(address_values)]
+
+
+                    for value in address_values:
+                        result = result_dict.copy()
+                        result['ip'] = value
+
+                        self.results.append(result)
+
 
 
 class fqdns(InfoObjectDetails):
@@ -283,51 +300,74 @@ class fqdns(InfoObjectDetails):
     default_columns = [
         ('fqdn', 'FQDN'),
         ('condition', 'Condition'),
-        ('infoobject_id', 'InfoObject ID'),
+        ('apply_condition', 'Apply Condition'),
+        ('iobject_url', 'InfoObject URL'),
     ]
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
     # values extracted from the information objects
     def extractor(self, **kwargs):
-
         for iobject_pk, iobject_dict in self.iobject_map.items():
             iobject = iobject_dict['iobject']
-            result_dict = self.init_result_dict(iobject)
-            result_dict['infoobject_id'] = iobject_pk
-            result_dict['condition'] = ''
-            result_dict['fqdn'] = ''
 
-            for fact in iobject.facts.all():
-                value = fact.fact_values.all()[0].value
+            iobject_type = iobject_dict['iobject_type']
+            iobject_type_family = iobject_dict['iobject_type_family']
+            io2fs = iobject_dict['facts']
 
-                # todo:
-                # cybox.mitre.org:DomainObject ??? old
-                # cybox.mitre.org:HostnameObject
 
-                # cybox.mitre.org:DomainNameObject
-                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
-                    iobject.iobject_type.name == 'DomainNameObject' and
-                    fact.fact_term.term == 'Properties/Value'):
-                    result_dict['fqdn'] = value
+            if iobject_type_family == 'cybox.mitre.org':
+                if iobject_type in ['DomainNameObject',
+                                    'LinkObject',
+                                    'URIObject']:
 
-                # cybox.mitre.org:LinkObject
-                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
-                    iobject.iobject_type.name == 'LinkObject'):
-                    if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
-                        result_dict['condition'] = value
-                    else:
-                        result_dict['fqdn'] = value
+                    search_term = 'Properties/Value'
+                    search_attribute = ''
+                else:
+                    continue
+            else:
+                continue
 
-                # cybox.mitre.org:URIObject
-                if (iobject.iobject_type.iobject_family.name == 'cybox.mitre.org' and
-                    iobject.iobject_type.name == 'URIObject'):
-                    if fact.fact_term.attribute and fact.fact_term.attribute == 'condition':
-                        result_dict['condition'] = value
-                    else:
-                        result_dict['fqdn'] = value
 
-            # only add if a fqdn is found and it does not already exist in list
-            if (result_dict['fqdn'] and
-                result_dict['infoobject_id'] not in [x['infoobject_id'] for x in self.results]):
-                self.results.append(result_dict)
+            for io2f in io2fs:
+                result_dict = self.init_result_dict(io2f)
+                result_dict['condition'] = ''
+                result_dict['apply_condition'] = ''
+                result_dict['fqdn'] = ''
+
+                fact = io2f.fact
+                if not (fact.fact_term.term == search_term and fact.fact_term.attribute == search_attribute):
+                    continue
+
+
+                attributes = self.get_attributes(io2f)
+
+
+                # The result looks something like this::
+                #
+                #     {'category': [('ipv4-addr', 'Properties')],
+                #      'condition': [('Equals', 'Properties/Address_Value')]}
+                #
+                # Note that we have a list of results, because an attribute may occur several
+                # times "above" an element. The list is ordered from the closest occurrance of
+                # the attribute to the most distant one
+
+
+                apply_condition = attributes.get('apply_condition',[('',None)])[0][0]
+
+                condition = attributes.get('condition',[('',None)])[0][0]
+
+
+                values = map(lambda av : av.value, fact.fact_values.all())
+
+
+                if apply_condition and apply_condition == 'ALL':
+                    values = [",".join(values)]
+
+                for value in values:
+                    result = result_dict.copy()
+                    result['fqdn'] = value
+                    result['condition']= condition
+                    result['apply_condition'] = apply_condition
+                    self.results.append(result)
+
