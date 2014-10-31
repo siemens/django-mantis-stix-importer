@@ -3,6 +3,35 @@
 History
 -------
 
+0.3.0
++++++
+
+* Added graph postprocessors: when extracting graph
+  information from the database via dingos,
+  object-family-specifc postprocessors can be configured.
+  For STIX/CybOX, we define a postprocessor that 
+  merges an observable containing a single object
+  together into a single node.
+
+* Added icon information that is used by the dingos graph-display
+  for displaying object-type specific icons for graph nodes.
+
+* Tweak importer such that it returns additional information,
+  such as the list of generated objects. This is required for postprocessing
+  after the import.
+
+* Import now does not generate empty Placeholder objects anymore.
+
+* Import command now stores XML on disk
+
+* Adding more STIX/CybOX-specific naming schemas which can
+  be imported.
+
+* Added exporters for IPs, FQDN/URIs, and Hashvalues
+
+* Added object-type specific views for most important STIX entities
+
+
 
 0.2.0 (2014-02-26)
 ++++++++++++++++++

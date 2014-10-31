@@ -37,9 +37,9 @@ setup(
     include_package_data=True,
     install_requires=[
         "ipaddr>=2.1.11",
-        "django-dingos>=0.3.0",
-        "django-mantis-core>=0.3.0",
-        "django-mantis-openioc-importer>=0.3.0"
+        "django-dingos>=0.3.0,<0.4.0",
+        "django-mantis-core>=0.3.0,<0.4.0",
+        "django-mantis-openioc-importer>=0.3.0,<0.4.0"
     ],
     license="GPLv2+",
     zip_safe=False,
