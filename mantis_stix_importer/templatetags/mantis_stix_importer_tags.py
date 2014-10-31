@@ -136,7 +136,8 @@ def show_Observable(context,graph,
                    observable_node,
                    stand_alone=False):
     observable_node_data = graph.node[observable_node]
-    observable_data = {'node' : observable_node_data}
+    observable_data = {'node' : observable_node_data,
+                       'pk': observable_node}
 
     if observable_node_data['name']:
         observable_data['title'] = "%s" % observable_node_data['name']
