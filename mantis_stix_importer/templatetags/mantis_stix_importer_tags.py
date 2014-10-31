@@ -35,6 +35,7 @@ def show_Indicator(context,graph,
                    stand_alone=False):
     indicator_node_data = graph.node[indicator_node]
     indicator_data = {'node' : indicator_node_data,
+                      'pk': indicator_node,
                       'title' : "Indicator: %s" % indicator_node_data['name'] }
 
     obj_pk_list = list(graph_utils.dfs_preorder_nodes(graph,
@@ -48,6 +49,7 @@ def show_Indicator(context,graph,
         obj_node_data = graph.node[obj_pk]
         if 'Object' in obj_node_data['iobject_type']:
             obj_data = {'node': obj_node_data,
+                        'pk': obj_pk,
                         'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
             obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
             obj_list.append(obj_data)
@@ -65,6 +67,7 @@ def show_TTP(context,graph,
              stand_alone=False):
     ttp_node_data = graph.node[ttp_node]
     ttp_data = {'node' : ttp_node_data,
+                'pk': ttp_node,
                          'title' : "TTP: %s" % ttp_node_data['name'] }
     ttp_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
 
@@ -78,6 +81,7 @@ def show_Incident(context,graph,
              stand_alone=False):
     incident_node_data = graph.node[incident_node]
     incident_data = {'node' : incident_node_data,
+                     'pk': incident_node,
                          'title' : "Incident: %s" % incident_node_data['name'] }
     incident_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
 
@@ -91,6 +95,7 @@ def show_Course_Of_Action(context,graph,
              stand_alone=False):
     course_of_action_node_data = graph.node[course_of_action_node]
     course_of_action_data = {'node' : course_of_action_node_data,
+                             'pk': course_of_action_node,
                          'title' : "Course of action: %s" % course_of_action_node_data['name'] }
     course_of_action_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
 
@@ -104,6 +109,7 @@ def show_Campaign(context,graph,
              stand_alone=False):
     campaign_node_data = graph.node[campaign_node]
     campaign_data = {'node' : campaign_node_data,
+                     'pk': campaign_node,
                          'title' : "Campaign: %s" % campaign_node_data['name'] }
     campaign_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
 
@@ -117,6 +123,7 @@ def show_Threat_Actor(context,graph,
                       stand_alone=False):
     threat_actor_node_data = graph.node[threat_actor_node]
     threat_actor_data = {'node' : threat_actor_node_data,
+                         'pk': threat_actor_node,
                          'title' : "Threat actor: %s" % threat_actor_node_data['name'] }
     threat_actor_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
 
@@ -147,6 +154,7 @@ def show_Observable(context,graph,
         obj_node_data = graph.node[obj_pk]
         if 'Object' in obj_node_data['iobject_type']:
             obj_data = {'node': obj_node_data,
+                        'pk': obj_pk,
                         'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
             obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
             obj_list.append(obj_data)
@@ -163,6 +171,7 @@ def show_ObservableDetails(context,graph, observable_node, stand_alone=False):
     observable_node_data = graph.node[observable_node]
     observable_data = {
         'node': observable_node_data,
+        'pk': obj_pk,
         'title': "%s" % observable_node_data['name'],
     }
 
@@ -177,6 +186,7 @@ def show_ObservableDetails(context,graph, observable_node, stand_alone=False):
         if 'Object' in obj_node_data['iobject_type']:
             obj_list.append({
                 'node': obj_node_data,
+                'pk': obj_pk,
                 'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object', ''), obj_node_data['name']),
                 'filter': [(lambda x: not 'Related' in x.fact.fact_term.term)],
             })

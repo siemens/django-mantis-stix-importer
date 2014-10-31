@@ -24,7 +24,7 @@ History
 
 * Import command now stores XML on disk
 
-* Adding more STIX/CybOX-specific naming schemas which can
+* Adding more STIX/CybOX-specific naming schemas, which can
   be imported.
 
 * Added exporters for IPs, FQDN/URIs, and Hashvalues

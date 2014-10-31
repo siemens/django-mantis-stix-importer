@@ -4,7 +4,7 @@
 {% if stand_alone %}
     {% show_InfoObject iobject2facts=incident.node.facts title="Selected Details" io2f_pred=incident.filter header_level=2 %}
 {% else %}
-    {% show_InfoObject iobject2facts=incident.node.facts title=incident.title io2f_pred=incident.filter close_div=False header_level=2 inner_collapsible='Selected Details'%}
+    {% show_InfoObject iobject2facts=incident.node.facts link_pk=incident.pk title=incident.title io2f_pred=incident.filter close_div=False header_level=2 inner_collapsible='Selected Details'%}
 {% endif %}
 
 {% show_InfoObject iobject2facts=incident.node.facts title="All Details" fold_status='closed' header_level=3 %}
