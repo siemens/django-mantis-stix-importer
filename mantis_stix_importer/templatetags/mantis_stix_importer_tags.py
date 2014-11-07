@@ -172,7 +172,7 @@ def show_ObservableDetails(context,graph, observable_node, stand_alone=False):
     observable_node_data = graph.node[observable_node]
     observable_data = {
         'node': observable_node_data,
-        'pk': obj_pk,
+        'pk': observable_node,
         'title': "%s" % observable_node_data['name'],
     }
 
