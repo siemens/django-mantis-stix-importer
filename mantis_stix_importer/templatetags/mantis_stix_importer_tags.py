@@ -51,11 +51,11 @@ def show_Indicator(context,graph,
             obj_data = {'node': obj_node_data,
                         'pk': obj_pk,
                         'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
-            obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
+            obj_data['filter'] =  [(lambda x: not 'Related' in x.term)]
             obj_list.append(obj_data)
 
     indicator_data['objects'] = obj_list
-    indicator_data['filter'] =  [(lambda x: 'Description' in x.fact.fact_term.term)]
+    indicator_data['filter'] =  [(lambda x: 'Description' in x.term)]
 
     context['indicator'] = indicator_data
     context['stand_alone'] = stand_alone
@@ -69,7 +69,7 @@ def show_TTP(context,graph,
     ttp_data = {'node' : ttp_node_data,
                 'pk': ttp_node,
                          'title' : "TTP: %s" % ttp_node_data['name'] }
-    ttp_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+    ttp_data['filter'] = [(lambda x: 'Description' in x.term)]
 
     context['ttp'] = ttp_data
     context['stand_alone'] = stand_alone
@@ -83,7 +83,7 @@ def show_Incident(context,graph,
     incident_data = {'node' : incident_node_data,
                      'pk': incident_node,
                          'title' : "Incident: %s" % incident_node_data['name'] }
-    incident_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+    incident_data['filter'] = [(lambda x: 'Description' in x.term)]
 
     context['incident'] = incident_data
     context['stand_alone'] = stand_alone
@@ -97,7 +97,7 @@ def show_Course_Of_Action(context,graph,
     course_of_action_data = {'node' : course_of_action_node_data,
                              'pk': course_of_action_node,
                          'title' : "Course of action: %s" % course_of_action_node_data['name'] }
-    course_of_action_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+    course_of_action_data['filter'] = [(lambda x: 'Description' in x.term)]
 
     context['course_of_action'] = course_of_action_data
     context['stand_alone'] = stand_alone
@@ -111,7 +111,7 @@ def show_Campaign(context,graph,
     campaign_data = {'node' : campaign_node_data,
                      'pk': campaign_node,
                          'title' : "Campaign: %s" % campaign_node_data['name'] }
-    campaign_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+    campaign_data['filter'] = [(lambda x: 'Description' in x.term)]
 
     context['campaign'] = campaign_data
     context['stand_alone'] = stand_alone
@@ -125,7 +125,7 @@ def show_Threat_Actor(context,graph,
     threat_actor_data = {'node' : threat_actor_node_data,
                          'pk': threat_actor_node,
                          'title' : "Threat actor: %s" % threat_actor_node_data['name'] }
-    threat_actor_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+    threat_actor_data['filter'] = [(lambda x: 'Description' in x.term)]
 
     context['threat_actor'] = threat_actor_data
     context['stand_alone'] = stand_alone
@@ -157,11 +157,11 @@ def show_Observable(context,graph,
             obj_data = {'node': obj_node_data,
                         'pk': obj_pk,
                         'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object',''),obj_node_data['name'])}
-            obj_data['filter'] =  [(lambda x: not 'Related' in x.fact.fact_term.term)]
+            obj_data['filter'] =  [(lambda x: not 'Related' in x.term)]
             obj_list.append(obj_data)
 
     observable_data['objects'] = obj_list
-    observable_data['filter'] =  [(lambda x: 'Description' in x.fact.fact_term.term)]
+    observable_data['filter'] =  [(lambda x: 'Description' in x.term)]
 
     context['observable'] = observable_data
     context['stand_alone'] = stand_alone
@@ -189,11 +189,11 @@ def show_ObservableDetails(context,graph, observable_node, stand_alone=False):
                 'node': obj_node_data,
                 'pk': obj_pk,
                 'title': "%s: %s" % (obj_node_data['iobject_type'].replace('Object', ''), obj_node_data['name']),
-                'filter': [(lambda x: not 'Related' in x.fact.fact_term.term)],
+                'filter': [(lambda x: not 'Related' in x.term)],
             })
 
     observable_data['objects'] = obj_list
-    observable_data['filter'] = [(lambda x: 'Description' in x.fact.fact_term.term)]
+    observable_data['filter'] = [(lambda x: 'Description' in x.term)]
 
     context['observable'] = observable_data
     context['stand_alone'] = stand_alone

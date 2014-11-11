@@ -110,7 +110,7 @@ class StixPackageView(BasicDetailView):
         package_node_data = graph.node[obj_pk]
 
         context['package'] = {'node' : package_node_data,
-                              'filter' : [(lambda x: 'STIX_Header' in x.fact.fact_term.term)]}
+                              'filter' : [(lambda x: 'STIX_Header' in x.term)]}
 
         # extract cyber threat information nodes
         observable_info = []
