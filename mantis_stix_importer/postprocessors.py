@@ -18,6 +18,8 @@
 import re
 import ipaddr
 
+from dingos.models import InfoObject2Fact
+
 from dingos.core.extractors import InfoObjectDetails
 
 class hashes(InfoObjectDetails):
@@ -51,13 +53,15 @@ class hashes(InfoObjectDetails):
 
 
     """
+    enrich_details = False
+
+    exporter_name = 'hashes'
 
     # define the default columns that are output if no column
     # information is provided in the call
 
-    default_columns = [('hash_type','Hash Type'),
+    default_columns = InfoObjectDetails._default_columns + [('hash_type','Hash Type'),
                        ('hash_value','Hash Value'),
-                       ('iobject_url', 'InfoObject URL'),
                        ]
 
 
@@ -72,7 +76,11 @@ class hashes(InfoObjectDetails):
         specific_hash_type = kwargs.get('hash_type',None)
 
 
-        for io2f in self.io2fs:
+        hash_io2fs = self.io2fs.filter(fact__fact_term__term__contains='Simple_Hash_Value',fact__fact_term__attribute='')
+
+
+
+        for io2f in hash_io2fs: # self.io2fs:
             #
             # We iterate through all the facts that are contained
             # class was instantiated. If we wanted to
@@ -106,8 +114,22 @@ class hashes(InfoObjectDetails):
             #    </cyboxCommon:Hash>
             #
 
-            if 'Simple_Hash_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
-                hash_values = map(lambda av : av.value, io2f.fact.fact_values.all())
+            io2f = InfoObject2Fact.objects.filter(pk=io2f.pk).prefetch_related( 'iobject',
+                                                                                                'iobject__identifier',
+                                                                                                'iobject__identifier__namespace',
+                                                                                                'iobject__iobject_family',
+                                                                                                'iobject__iobject_type',
+                                                                                                'fact__fact_term',
+                                                                                                'fact__fact_values',
+                                                                                                'fact__fact_values__fact_data_type',
+                                                                                                'fact__value_iobject_id',
+                                                                                                'fact__value_iobject_id__latest',
+                                                                                                'fact__value_iobject_id__latest__iobject_type',
+                                                                                                'node_id').order_by('iobject__id','node_id__name')[0]
+
+            if True: # 'Simple_Hash_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
+                hash_values = io2f.fact.fact_values.all().values_list('value')
+
                 # In order to find out about the hash type (if one is provided), we have
                 # to iterate through the siblings of the 'Simple_Hash_Value' element:
                 siblings = self.get_siblings(io2f)
@@ -165,19 +187,18 @@ class ips(InfoObjectDetails):
 
     """
 
-    #
+    exporter_name = 'IPs'
 
 
 
     # define the default columns that are output if no column
     # information is provided in the call
 
-    default_columns = [('ip','IP'),
+    default_columns = InfoObjectDetails._default_columns + [('ip','IP'),
         ('category','Category'),
         ('condition', 'Condition'),
-        ('apply_condition', 'Apply Condition'),
-        ('iobject_url', 'InfoObject URL'),
-        ]
+        ('apply_condition', 'Apply Condition')]
+
 
     # define below the extractor function that sets self.results
     # to a dictionary that maps column-names / keys to
@@ -241,7 +262,7 @@ class ips(InfoObjectDetails):
 
                 condition = attributes.get('condition',[('',None)])[0][0]
 
-                apply_condition = attributes.get('condition',[('',None)])[0][0]
+                apply_condition = attributes.get('apply_condition',[('',None)])[0][0]
 
                 if not category:
                     # Damn, no category information is provided, so we have to check
@@ -297,11 +318,13 @@ class fqdns(InfoObjectDetails):
 
     # define the default columns that are output if no column
     # information is provided in the call
-    default_columns = [
+
+    exporter_name = "fqdn"
+
+    default_columns = InfoObjectDetails._default_columns + [
         ('fqdn', 'FQDN'),
         ('condition', 'Condition'),
         ('apply_condition', 'Apply Condition'),
-        ('iobject_url', 'InfoObject URL'),
     ]
 
     # define below the extractor function that sets self.results
@@ -321,8 +344,8 @@ class fqdns(InfoObjectDetails):
                                     'LinkObject',
                                     'URIObject']:
 
-                    search_term = 'Properties/Value'
-                    search_attribute = ''
+                    search_term_re = re.compile('^Properties/Value$')
+                    search_attribute_re = re.compile('^$')
                 else:
                     continue
             else:
@@ -336,7 +359,7 @@ class fqdns(InfoObjectDetails):
                 result_dict['fqdn'] = ''
 
                 fact = io2f.fact
-                if not (fact.fact_term.term == search_term and fact.fact_term.attribute == search_attribute):
+                if not (search_term_re.match(fact.fact_term.term) and search_attribute_re.match(fact.fact_term.attribute)):
                     continue
 
 
