@@ -17,7 +17,7 @@
 
 import re
 import ipaddr
-
+from datetime import datetime
 from dingos.models import InfoObject2Fact
 
 from dingos.core.extractors import InfoObjectDetails
@@ -53,7 +53,7 @@ class hashes(InfoObjectDetails):
 
 
     """
-    enrich_details = False
+    enrich_details = True
 
     exporter_name = 'hashes'
 
@@ -75,34 +75,10 @@ class hashes(InfoObjectDetails):
 
         specific_hash_type = kwargs.get('hash_type',None)
 
-
         hash_io2fs = self.io2fs.filter(fact__fact_term__term__contains='Simple_Hash_Value',fact__fact_term__attribute='')
 
 
-
         for io2f in hash_io2fs: # self.io2fs:
-            #
-            # We iterate through all the facts that are contained
-            # class was instantiated. If we wanted to
-            # operate on an object-by-object base,
-            # we could instead iterate over the following:
-            #
-            #  - self.iobject_map, which maps iobject pks to the following
-            #    information:
-            #       {'identifier_ns': <identifier namespace uri>,
-            #        'identifier_uid': <identifier uid>,
-            #        'name': <object name>,
-            #        'iobject_type': <info object type, eg.g 'WinExecutableFile'>
-            #        'iobject_type_family': <info object type family, e.g. 'cybox.mitre.org'>,
-            #        'iobject': <InfoObject instance>
-            #        'url': <url under which object can be viewed: '/mantis/View/InfoObject/<pk>/'>,
-            #        'facts': <list of InfoObject2Fact instances contained in info object>
-            #    InfoObject2Fact objects contained in the Information Object
-            # - self.graph (if a graph was passed):
-            #   A networkx-graph, where each node represents a iobject pk and
-            #   ``self.graph.node[pk]``  contains the same information
-            #   as ``self.iobject_map[pk]``.
-            #
 
             # Hashes in CybOX are contained in a fact with fact term ending in 'Simple_Hash_Value' as
             # follows::
@@ -114,45 +90,40 @@ class hashes(InfoObjectDetails):
             #    </cyboxCommon:Hash>
             #
 
-            io2f = InfoObject2Fact.objects.filter(pk=io2f.pk).prefetch_related( 'iobject',
-                                                                                                'iobject__identifier',
-                                                                                                'iobject__identifier__namespace',
-                                                                                                'iobject__iobject_family',
-                                                                                                'iobject__iobject_type',
-                                                                                                'fact__fact_term',
-                                                                                                'fact__fact_values',
-                                                                                                'fact__fact_values__fact_data_type',
-                                                                                                'fact__value_iobject_id',
-                                                                                                'fact__value_iobject_id__latest',
-                                                                                                'fact__value_iobject_id__latest__iobject_type',
-                                                                                                'node_id').order_by('iobject__id','node_id__name')[0]
 
-            if True: # 'Simple_Hash_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
-                hash_values = io2f.fact.fact_values.all().values_list('value')
 
-                # In order to find out about the hash type (if one is provided), we have
-                # to iterate through the siblings of the 'Simple_Hash_Value' element:
-                siblings = self.get_siblings(io2f)
-                for sibling in siblings:
-                    hash_type = None
-                    if 'Hash/Type' in sibling.fact_term.term:
-                        hash_type = sibling.fact_values.all()[0].value
-                        break
+            hash_value = io2f.value
 
-                # We only include the hash in the list of results, if either no specific hash type
-                # has been requested, or the hash type specified in the object matches the
-                # specific hash type that was requested
+            hash_type = ''
+            # In order to find out about the hash type (if one is provided), we have
+            # to iterate through the siblings of the 'Simple_Hash_Value' element:
+
+            siblings = self.get_siblings(io2f)
+            #try:
+            #    sibling = siblings[0]
+            #except:
+            #    sibling = None
+            #if sibling:
+
+            for sibling in siblings:
+                hash_type = None
+                if 'Hash/Type' in sibling.term:
+                    hash_type = sibling.value
+                    break
+
+            # We only include the hash in the list of results, if either no specific hash type
+            # has been requested, or the hash type specified in the object matches the
+            # specific hash type that was requested
 
 
 
-                if  (not specific_hash_type) or hash_type in specific_hash_type:
-                    result_dict = self.init_result_dict(io2f)
-                    result_dict['hash_type'] = hash_type
+            if  (not specific_hash_type) or hash_type in specific_hash_type:
+                result_dict = self.init_result_dict(io2f)
+                result_dict['hash_type'] = hash_type
 
-                    for value in hash_values:
-                        result = result_dict.copy()
-                        result['hash_value'] = value
-                        self.results.append(result)
+                result = result_dict.copy()
+                result['hash_value'] = hash_value
+                self.results.append(result)
 
 
 
@@ -187,6 +158,8 @@ class ips(InfoObjectDetails):
 
     """
 
+    enrich_details = True
+
     exporter_name = 'IPs'
 
 
@@ -206,42 +179,12 @@ class ips(InfoObjectDetails):
 
     def extractor(self,**kwargs):
 
+        #ip_io2fs = self.io2fs.filter(term__icontains='Address_Value',attribute='')
 
         for io2f in self.io2fs:
-            #
-            # We iterate through all the facts that are contained
-            # in the set of objects with which the
-            # class was instantiated. If we wanted to
-            # operate on an object-by-object base,
-            # we could instead iterate over the following:
-            #
-            #  - self.iobject_map, which maps iobject pks to the following
-            #    information:
-            #       {'identifier_ns': <identifier namespace uri>,
-            #        'identifier_uid': <identifier uid>,
-            #        'name': <object name>,
-            #        'iobject_type': <info object type, eg.g 'WinExecutableFile'>
-            #        'iobject_type_family': <info object type family, e.g. 'cybox.mitre.org'>,
-            #        'iobject': <InfoObject instance>
-            #        'url': <url under which object can be viewed: '/mantis/View/InfoObject/<pk>/'>,
-            #        'facts': <list of InfoObject2Fact instances contained in info object>
-            #    InfoObject2Fact objects contained in the Information Object
-            # - self.graph (if a graph was passed):
-            #   A networkx-graph, where each node represents a iobject pk and
-            #   ``self.graph.node[pk]``  contains the same information
-            #   as ``self.iobject_map[pk]``.
-            #
 
-            # Address objects are defined follows:
-            #
-            #  <cybox:Properties xsi:type="AddressObject:AddressObjectType" category="ipv4-addr">
-            #                  <AddressObject:Address_Value condition='Equals'>127.0.0.1</AddressObject:Address_Value>
-            # </cybox:Properties>
-            #
-
-
-            if 'Address_Value' in io2f.fact.fact_term.term and not io2f.fact.fact_term.attribute:
-                address_values = map(lambda av : av.value, io2f.fact.fact_values.all())
+            if 'Address_Value' in io2f.term and not io2f.attribute:
+                address_value = io2f.value
 
                 # In order to find out about the category, we have to look at the attributes
                 # associated with this fact.
@@ -268,7 +211,7 @@ class ips(InfoObjectDetails):
                     # Damn, no category information is provided, so we have to check
                     # with a regular expression, whether address value is an ip4 address
                     try:
-                        checked_ip=ipaddr.IPAddress(address_values[0])
+                        checked_ip=ipaddr.IPAddress(address_value)
                         category = "ipv%s-addr" % checked_ip.version
                         is_ip = True
                     except ValueError:
@@ -288,15 +231,15 @@ class ips(InfoObjectDetails):
                     result_dict['condition'] = condition
                     result_dict['apply_condition'] = apply_condition
 
-                    if apply_condition and apply_condition == 'ALL':
-                        address_values = [",".join(address_values)]
+                    #if apply_condition and apply_condition == 'ALL':
+                    #    address_values = [",".join(address_values)]
 
 
-                    for value in address_values:
-                        result = result_dict.copy()
-                        result['ip'] = value
+                    #for value in address_values:
+                    result = result_dict.copy()
+                    result['ip'] = address_value
 
-                        self.results.append(result)
+                    self.results.append(result)
 
 
 
@@ -316,6 +259,9 @@ class fqdns(InfoObjectDetails):
                default: True)
     """
 
+
+    enrich_details = True
+
     # define the default columns that are output if no column
     # information is provided in the call
 
@@ -331,66 +277,41 @@ class fqdns(InfoObjectDetails):
     # to a dictionary that maps column-names / keys to
     # values extracted from the information objects
     def extractor(self, **kwargs):
-        for iobject_pk, iobject_dict in self.iobject_map.items():
-            iobject = iobject_dict['iobject']
 
-            iobject_type = iobject_dict['iobject_type']
-            iobject_type_family = iobject_dict['iobject_type_family']
-            io2fs = iobject_dict['facts']
-
-
-            if iobject_type_family == 'cybox.mitre.org':
-                if iobject_type in ['DomainNameObject',
-                                    'LinkObject',
-                                    'URIObject']:
-
-                    search_term_re = re.compile('^Properties/Value$')
-                    search_attribute_re = re.compile('^$')
-                else:
-                    continue
-            else:
-                continue
+        fqdn_io2fvs = self.io2fs.filter(iobject_type_name__in=['DomainNameObject',
+                                                               'LinkObject',
+                                                                'URIObject'],
+                                        term='Properties/Value',
+                                        attribute=''
+                                        )
 
 
-            for io2f in io2fs:
-                result_dict = self.init_result_dict(io2f)
-                result_dict['condition'] = ''
-                result_dict['apply_condition'] = ''
-                result_dict['fqdn'] = ''
+        for io2f in fqdn_io2fvs:
+            result_dict = self.init_result_dict(io2f)
+            result_dict['condition'] = ''
+            result_dict['apply_condition'] = ''
+            result_dict['fqdn'] = ''
 
-                fact = io2f.fact
-                if not (search_term_re.match(fact.fact_term.term) and search_attribute_re.match(fact.fact_term.attribute)):
-                    continue
+            attributes = self.get_attributes(io2f)
 
 
-                attributes = self.get_attributes(io2f)
+            # The result looks something like this::
+            #
+            #     {'category': [('ipv4-addr', 'Properties')],
+            #      'condition': [('Equals', 'Properties/Address_Value')]}
+            #
+            # Note that we have a list of results, because an attribute may occur several
+            # times "above" an element. The list is ordered from the closest occurrance of
+            # the attribute to the most distant one
 
 
-                # The result looks something like this::
-                #
-                #     {'category': [('ipv4-addr', 'Properties')],
-                #      'condition': [('Equals', 'Properties/Address_Value')]}
-                #
-                # Note that we have a list of results, because an attribute may occur several
-                # times "above" an element. The list is ordered from the closest occurrance of
-                # the attribute to the most distant one
+            apply_condition = attributes.get('apply_condition',[('',None)])[0][0]
 
+            condition = attributes.get('condition',[('',None)])[0][0]
 
-                apply_condition = attributes.get('apply_condition',[('',None)])[0][0]
-
-                condition = attributes.get('condition',[('',None)])[0][0]
-
-
-                values = map(lambda av : av.value, fact.fact_values.all())
-
-
-                if apply_condition and apply_condition == 'ALL':
-                    values = [",".join(values)]
-
-                for value in values:
-                    result = result_dict.copy()
-                    result['fqdn'] = value
-                    result['condition']= condition
-                    result['apply_condition'] = apply_condition
-                    self.results.append(result)
+            result = result_dict.copy()
+            result['fqdn'] = io2f.value
+            result['condition']= condition
+            result['apply_condition'] = apply_condition
+            self.results.append(result)
 
