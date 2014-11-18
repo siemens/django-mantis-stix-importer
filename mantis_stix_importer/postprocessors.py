@@ -60,6 +60,7 @@ class hashes(InfoObjectDetails):
 
     default_columns = InfoObjectDetails._default_columns + [('hash_type','Hash Type'),
                        ('hash_value','Hash Value'),
+                               ("fact.pk", "Fakt PK")
                        ]
 
 
@@ -168,7 +169,8 @@ class ips(InfoObjectDetails):
     default_columns = InfoObjectDetails._default_columns + [('ip','IP'),
         ('category','Category'),
         ('condition', 'Condition'),
-        ('apply_condition', 'Apply Condition')]
+        ('apply_condition', 'Apply Condition'),
+        ("fact.pk", "Fakt PK")]
 
 
     # define below the extractor function that sets self.results
@@ -269,6 +271,7 @@ class fqdns(InfoObjectDetails):
         ('fqdn', 'FQDN'),
         ('condition', 'Condition'),
         ('apply_condition', 'Apply Condition'),
+        ("fact.pk", "Fakt PK")
     ]
 
     # define below the extractor function that sets self.results
