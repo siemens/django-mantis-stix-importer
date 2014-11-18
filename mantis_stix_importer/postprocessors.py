@@ -60,7 +60,7 @@ class hashes(InfoObjectDetails):
 
     default_columns = InfoObjectDetails._default_columns + [('hash_type','Hash Type'),
                        ('hash_value','Hash Value'),
-                       ("fact.pk", "Fakt PK")
+                       ("fact.pk", "Fakt PK"),
                        ('filename','File Name')
                        ]
 
