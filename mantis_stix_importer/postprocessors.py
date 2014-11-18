@@ -60,6 +60,7 @@ class hashes(InfoObjectDetails):
 
     default_columns = InfoObjectDetails._default_columns + [('hash_type','Hash Type'),
                        ('hash_value','Hash Value'),
+                       ('filename','File Name')
                        ]
 
 
@@ -74,6 +75,15 @@ class hashes(InfoObjectDetails):
         specific_hash_type = kwargs.get('hash_type',None)
 
         hash_io2fs = self.io2fs.filter(fact__fact_term__term__contains='Simple_Hash_Value',fact__fact_term__attribute='')
+
+        filenames = self.io2fs.filter(fact__fact_term__term__contains='File_Name',fact__fact_term__attribute='').values_list('iobject_id','node_id','value')
+
+        print filenames
+
+        file_name_dict = {}
+        for (iobject_id,node_id,file_name) in filenames:
+            file_name_dict[iobject_id] = (node_id,file_name)
+
 
 
         for io2f in hash_io2fs: # self.io2fs:
@@ -109,19 +119,33 @@ class hashes(InfoObjectDetails):
                     hash_type = sibling.value
                     break
 
+
+            
+            
             # We only include the hash in the list of results, if either no specific hash type
             # has been requested, or the hash type specified in the object matches the
             # specific hash type that was requested
 
 
-
             if  (not specific_hash_type) or hash_type in specific_hash_type:
                 result_dict = self.init_result_dict(io2f)
+                
                 result_dict['hash_type'] = hash_type
+                result_dict['hash_value'] = hash_value
+                result_dict['filename'] = ""
 
-                result = result_dict.copy()
-                result['hash_value'] = hash_value
-                self.results.append(result)
+
+                (node_id,file_name) = file_name_dict.get(result_dict['_object_pk'],(None,None))
+
+                if node_id:
+                    fn_node_id = node_id.split(':')
+                    hash_node_id = io2f.node_id.split(':')
+                    if len(hash_node_id) == len(fn_node_id)+2 and hash_node_id[0] == fn_node_id[0]:
+                        result_dict['filename'] = file_name
+
+                self.results.append(result_dict)
+
+            
 
 
 
