@@ -21,9 +21,9 @@ from dingos import DINGOS_TEMPLATE_FAMILY
 
 from dingos.models import InfoObject
 
-from dingos.view_classes import BasicDetailView
+from dingos.views import InfoObjectView
 
-class IndicatorView(BasicDetailView):
+class IndicatorView(InfoObjectView):
 
     model = InfoObject
 
@@ -48,7 +48,7 @@ class IndicatorView(BasicDetailView):
         return context
 
 
-class ObservableView(BasicDetailView):
+class ObservableView(InfoObjectView):
 
     model = InfoObject
 
@@ -73,7 +73,7 @@ class ObservableView(BasicDetailView):
         return context
 
 
-class StixPackageView(BasicDetailView):
+class StixPackageView(InfoObjectView):
 
     model = InfoObject
 
