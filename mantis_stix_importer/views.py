@@ -92,6 +92,9 @@ class StixPackageView(InfoObjectView):
 
         graph = InfoObject.annotated_graph([obj_pk])
 
+        context['io2fvs'] = graph.graph['io2fvs']
+        print(context['io2fvs'])
+
         # get all edges that originate from this object
 
         edges_from_top = graph.edges(nbunch=[obj_pk], data = True)
