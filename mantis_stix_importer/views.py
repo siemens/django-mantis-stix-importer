@@ -35,7 +35,10 @@ class IndicatorView(InfoObjectView):
 
         context = super(IndicatorView, self).get_context_data(**kwargs)
 
-        context['graph'] = InfoObject.annotated_graph([self.object.pk])
+        graph = InfoObject.annotated_graph([self.object.pk])
+        context['graph'] = graph
+
+        context['io2fvs'] = graph.graph['io2fvs']
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -60,7 +63,10 @@ class ObservableView(InfoObjectView):
 
         context = super(ObservableView, self).get_context_data(**kwargs)
 
-        context['graph'] = InfoObject.annotated_graph([self.object.pk])
+        graph = InfoObject.annotated_graph([self.object.pk])
+        context['graph'] = graph
+
+        context['io2fvs'] = graph.graph['io2fvs']
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -93,7 +99,6 @@ class StixPackageView(InfoObjectView):
         graph = InfoObject.annotated_graph([obj_pk])
 
         context['io2fvs'] = graph.graph['io2fvs']
-        print(context['io2fvs'])
 
         # get all edges that originate from this object
 
