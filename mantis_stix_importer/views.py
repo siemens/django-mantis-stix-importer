@@ -19,9 +19,9 @@ from dingos import graph_utils
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
-from dingos.models import InfoObject
+from dingos.models import InfoObject,vIO2FValue
 
-from dingos.views import InfoObjectView
+from dingos.views import InfoObjectView,getTags
 
 class IndicatorView(InfoObjectView):
 
@@ -39,6 +39,8 @@ class IndicatorView(InfoObjectView):
         context['graph'] = graph
 
         context['io2fvs'] = graph.graph['io2fvs']
+
+        context['tag_dict'] = getTags(graph.nodes(),complex=True,model=InfoObject)
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -67,6 +69,8 @@ class ObservableView(InfoObjectView):
         context['graph'] = graph
 
         context['io2fvs'] = graph.graph['io2fvs']
+
+        context['tag_dict'] = getTags(graph.nodes(),complex=True,model=InfoObject)
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -99,6 +103,8 @@ class StixPackageView(InfoObjectView):
         graph = InfoObject.annotated_graph([obj_pk])
 
         context['io2fvs'] = graph.graph['io2fvs']
+
+        context['tag_dict'] = getTags(graph.nodes(),complex=True,model=InfoObject)
 
         # get all edges that originate from this object
 
