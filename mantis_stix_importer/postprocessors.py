@@ -20,6 +20,8 @@ import ipaddr
 
 from dingos.core.extractors import InfoObjectDetails
 
+from django.db.models import Q
+
 class hashes(InfoObjectDetails):
 
     """
@@ -78,8 +80,6 @@ class hashes(InfoObjectDetails):
         hash_io2fs = self.io2fs.filter(fact__fact_term__term__contains='Simple_Hash_Value',fact__fact_term__attribute='')
 
         filenames = self.io2fs.filter(fact__fact_term__term__contains='File_Name',fact__fact_term__attribute='').values_list('iobject_id','node_id','value')
-
-        print filenames
 
         file_name_dict = {}
         for (iobject_id,node_id,file_name) in filenames:
@@ -303,12 +303,26 @@ class fqdns(InfoObjectDetails):
     # values extracted from the information objects
     def extractor(self, **kwargs):
 
-        fqdn_io2fvs = self.io2fs.filter(iobject_type_name__in=['DomainNameObject',
-                                                               'LinkObject',
-                                                                'URIObject'],
+        q_dedicated_objects = Q(iobject_type_name__in=['DomainNameObject',
+                                                       'DomainObject'
+                                                       'LinkObject',
+                                                       'URIObject'],
                                         term='Properties/Value',
                                         attribute=''
                                         )
+
+        q_dns_query = Q(iobject_type_name='DNSQuery',
+                        term='Properties/Question/QName',
+                        attribute = '')
+
+        q_domain_name = Q(iobject_type_name='HTTPSessionObject',
+                          term__contains='/Domain_Name/Value',
+                          attribute = '')
+
+
+
+
+        fqdn_io2fvs = self.io2fs.filter(q_dedicated_objects | q_dns_query | q_domain_name)
 
 
         for io2f in fqdn_io2fvs:
@@ -339,4 +353,54 @@ class fqdns(InfoObjectDetails):
             result['condition']= condition
             result['apply_condition'] = apply_condition
             self.results.append(result)
+
+
+class email_addresses(InfoObjectDetails):
+    """
+
+    """
+    enrich_details = True
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    exporter_name = "email_address"
+
+    default_columns = InfoObjectDetails._default_columns + [
+        ('email_address', 'Email Address'),
+        ('condition', 'Condition'),
+        ('apply_condition', 'Apply Condition'),
+        ("fact.pk", "Fact PK")
+    ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+    def extractor(self, **kwargs):
+
+        q_all_address_values = Q(
+                                 term__icontains='Address_Value',
+                                 attribute=''
+                                )
+
+        email_io2fvs = self.io2fs.filter(q_all_address_values)
+
+        for io2f in email_io2fvs:
+            result_dict = self.init_result_dict(io2f)
+            result_dict['condition'] = ''
+            result_dict['apply_condition'] = ''
+            result_dict['fqdn'] = ''
+
+            if '@' in io2f.value:
+                attributes = self.get_attributes(io2f)
+
+                apply_condition = attributes.get('apply_condition',[('',None)])[0][0]
+
+                condition = attributes.get('condition',[('',None)])[0][0]
+
+                result = result_dict.copy()
+                result['email_address'] = io2f.value
+                result['condition']= condition
+                result['apply_condition'] = apply_condition
+                self.results.append(result)
 
