@@ -19,7 +19,7 @@ from dingos import graph_utils
 
 from dingos import DINGOS_TEMPLATE_FAMILY
 
-from dingos.models import InfoObject,vIO2FValue
+from dingos.models import InfoObject,Identifier
 
 from dingos.views import InfoObjectView,getTags
 
@@ -38,9 +38,12 @@ class IndicatorView(InfoObjectView):
         graph = InfoObject.annotated_graph([self.object.pk])
         context['graph'] = graph
 
-        context['io2fvs'] = graph.graph['io2fvs']
+        io2fvs  = graph.graph['io2fvs']
+        context['io2fvs'] = io2fvs
 
-        context['tag_dict'] = getTags(graph.nodes(),complex=True,model=InfoObject)
+        identifier_list = set([x.identifier.id for x in io2fvs])
+
+        context['tag_dict'] = getTags(identifier_list,complex=True,model=Identifier)
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -68,9 +71,12 @@ class ObservableView(InfoObjectView):
         graph = InfoObject.annotated_graph([self.object.pk])
         context['graph'] = graph
 
-        context['io2fvs'] = graph.graph['io2fvs']
+        io2fvs  = graph.graph['io2fvs']
+        context['io2fvs'] = io2fvs
 
-        context['tag_dict'] = getTags(graph.nodes(),complex=True,model=InfoObject)
+        identifier_list = set([x.identifier.id for x in io2fvs])
+
+        context['tag_dict'] = getTags(identifier_list,complex=True,model=Identifier)
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -101,10 +107,14 @@ class StixPackageView(InfoObjectView):
         obj_pk = self.object.id
 
         graph = InfoObject.annotated_graph([obj_pk])
+        context['graph'] = graph
 
-        context['io2fvs'] = graph.graph['io2fvs']
+        io2fvs  = graph.graph['io2fvs']
+        context['io2fvs'] = io2fvs
 
-        context['tag_dict'] = getTags(graph.nodes(),complex=True,model=InfoObject)
+        identifier_list = set([x.identifier.id for x in io2fvs])
+
+        context['tag_dict'] = getTags(identifier_list,complex=True,model=Identifier)
 
         # get all edges that originate from this object
 
