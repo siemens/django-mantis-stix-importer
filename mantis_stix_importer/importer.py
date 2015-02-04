@@ -431,8 +431,12 @@ class STIX_Import:
     #     http://cybox.mitre.org/common-2
 
     RE_LIST_NS_TYPE_FROM_NS_URL = [
+        re.compile("(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/XMLSchema/(?P<type>.+?))((-|(_v))(?P<revision>[0-9]+))$"),
         re.compile(
-            "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$")]
+            "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$"),
+
+
+    ]
 
     # In Cybox 1.x, the object properties were encompassed in an element called "Defined_Object". In the interest
     # of equal fact terms for equal things, we rename occurrences of "Defined_Object" to "Properties" upon
@@ -485,16 +489,16 @@ class STIX_Import:
             # Extract identifier:
             if '@id' in attributes:
                 result['id'] = attributes['@id']
-            elif '@object_reference' in attributes:
-                # 'object_reference' is used as follows::
-                #
-                #     (...)
-                #     <EmailMessageObj:Attachments>
-                #           <EmailMessageObj:File xsi:type="FileObj:FileObjectType"
-                #              object_reference="cybox:object-3cf6a958-5c3f-11e2-a06c-0050569761d3"/>
-                #     </EmailMessageObj:Attachments>
-                #     (...)
-                result['id'] = attributes['@object_reference']
+            #elif '@object_reference' in attributes:
+            #    # 'object_reference' is used as follows::
+            #    #
+            #    #     (...)
+            #    #     <EmailMessageObj:Attachments>
+            #    #           <EmailMessageObj:File xsi:type="FileObj:FileObjectType"
+            #    #              object_reference="cybox:object-3cf6a958-5c3f-11e2-a06c-0050569761d3"/>
+            #    #     </EmailMessageObj:Attachments>
+            #    #     (...)
+            #    result['id'] = attributes['@object_reference']
 
             elif '@phase_id' in attributes:
                 result['id'] = attributes['@phase_id']
@@ -674,12 +678,16 @@ class STIX_Import:
         #     (...)
         #
         # That is actually a reference, but we need to turn it into an '@idref'-reference.
-        # By treating the 'File' object-reference as an embedded object, this is done
+        # The setting below which is now commented out was used some time in order to
+        # treat the 'File' object-reference as an embedded object: then, the idref is created
         # automatically, because the xml_importer replaces embedded content with
         # '@idref'-based references.
+        # But: this does not work correctly, because an empty object is then created from
+        # this factoring out. So instead, we have to treat the object_reference when treating
+        # references.
 
-        if 'object_reference' in child_attributes:
-            return extract_typeinfo(child)
+        #if 'object_reference' in child_attributes:
+        #    return extract_typeinfo(child)
 
         if child.name=='Object' and not 'idref' in child_attributes:
             # Unfortunately, e.g., the example files created by MITRE from Mandiant reports
@@ -815,6 +823,9 @@ class STIX_Import:
 
         if 'idref' in attr_info:
             ref_key = 'idref'
+            (namespace, namespace_uri, uid) = self.split_qname(attr_info[ref_key])
+        if 'object_reference' in attr_info:
+            ref_key = 'object_reference'
             (namespace, namespace_uri, uid) = self.split_qname(attr_info[ref_key])
         elif fact['attribute'] and fact['attribute'] == 'phase_id':
 
@@ -1183,6 +1194,7 @@ class STIX_Import:
             # When we find a reference, we either retrieve the referenced object from
             # the database (if it exists) or we generate a PLACEHOLDER object
             (lambda fact, attr_info:    ("idref" in attr_info)
+            or ('object_reference' in attr_info)
             or (fact['attribute']
                 and ("phase_id" in fact['attribute']
                      or ("kill_chain_id" in fact['attribute']))),
