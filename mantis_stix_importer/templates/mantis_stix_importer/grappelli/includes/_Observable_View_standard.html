@@ -12,7 +12,7 @@
     <h3 class="grp-collapse-handler">Objects</h3>
 
     {%  for obj in observable.objects %}
-        {% show_InfoObject iobject2facts=obj.node.facts title=obj.title fold_status='closed' io2f_pred=obj.filter header_level=4%}
+        {% show_InfoObject link_pk=obj.pk iobject2facts=obj.node.facts title=obj.title fold_status='closed' io2f_pred=obj.filter header_level=4%}
     {% endfor %}
 </div>
 
