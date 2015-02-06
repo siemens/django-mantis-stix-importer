@@ -41,9 +41,9 @@ class IndicatorView(InfoObjectView):
         io2fvs  = graph.graph['io2fvs']
         context['io2fvs'] = io2fvs
 
-        identifier_list = set([x.identifier.id for x in io2fvs])
+        object_list = set([x.iobject for x in io2fvs])
 
-        context['tag_dict'] = getTags(identifier_list,complex=True,model=Identifier)
+        context['tag_dict'] = getTags(object_list)
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -74,9 +74,9 @@ class ObservableView(InfoObjectView):
         io2fvs  = graph.graph['io2fvs']
         context['io2fvs'] = io2fvs
 
-        identifier_list = set([x.identifier.id for x in io2fvs])
+        object_list = set([x.iobject for x in io2fvs])
 
-        context['tag_dict'] = getTags(identifier_list,complex=True,model=Identifier)
+        context['tag_dict'] = getTags(object_list)
 
         context['show_datatype'] = self.request.GET.get('show_datatype',False)
         context['show_NodeID'] = self.request.GET.get('show_nodeid',False)
@@ -112,9 +112,9 @@ class StixPackageView(InfoObjectView):
         io2fvs  = graph.graph['io2fvs']
         context['io2fvs'] = io2fvs
 
-        identifier_list = set([x.identifier.id for x in io2fvs])
+        object_list = set([x.iobject for x in io2fvs])
 
-        context['tag_dict'] = getTags(identifier_list,complex=True,model=Identifier)
+        context['tag_dict'] = getTags(object_list)
 
         # get all edges that originate from this object
 
