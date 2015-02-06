@@ -431,7 +431,7 @@ class STIX_Import:
     #     http://cybox.mitre.org/common-2
 
     RE_LIST_NS_TYPE_FROM_NS_URL = [
-        re.compile("(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/XMLSchema/(?P<type>.+?))((-|(_v))(?P<revision>.[0-9]+))$"),
+        re.compile("(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/XMLSchema/(?P<type>.+?))((-|(_v))(?P<revision>[0-9]+))$"),
         re.compile(
             "(?P<iotype_ns>http://(?P<family>(?P<family_tag>[^.]+)\.mitre.org)/([^#]+#)?(?P<type>.+?))((-|(_v))(?P<revision>.*))?$"),
 
