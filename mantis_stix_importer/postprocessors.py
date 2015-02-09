@@ -289,7 +289,7 @@ class fqdns(InfoObjectDetails):
     # define the default columns that are output if no column
     # information is provided in the call
 
-    exporter_name = "fqdn"
+    exporter_name = "fqdns"
 
     default_columns = InfoObjectDetails._default_columns + [
         ('fqdn', 'FQDN'),
@@ -364,7 +364,7 @@ class email_addresses(InfoObjectDetails):
     # define the default columns that are output if no column
     # information is provided in the call
 
-    exporter_name = "email_address"
+    exporter_name = "email_addresses"
 
     default_columns = InfoObjectDetails._default_columns + [
         ('email_address', 'Email Address'),
