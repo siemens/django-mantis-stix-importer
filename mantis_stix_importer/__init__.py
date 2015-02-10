@@ -32,9 +32,9 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                'email_addresses':{'module': 'mantis_stix_importer.postprocessors',
                                         'class': 'email_addresses',
                                         'name' : 'CybOX Email Address Export'},
-                               'cybox' : {'postprocessor_predicate' :
+                               'cybox_all' : {'postprocessor_predicate' :
                                               (lambda x,y: 'mantis_stix_importer' in y.get('module','')),
-                                          'name': 'Combined CybOX export'},
+                                          'name': 'CybOX Combined Export'},
                                'csv': {'module': 'dingos.core.extractors',
                                         'class': 'csv_export',
                                         'name' : 'Generic CSV export',
