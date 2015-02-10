@@ -16,11 +16,18 @@
 #
 
 
-import ipaddr
 
-from dingos.core.extractors import InfoObjectDetails
+
+import ipaddr
+import re
+
+
 
 from django.db.models import Q
+from django.core.validators import URLValidator
+from django.core.exceptions import ValidationError
+
+from dingos.core.extractors import InfoObjectDetails
 
 class hashes(InfoObjectDetails):
 
@@ -144,6 +151,37 @@ class hashes(InfoObjectDetails):
                     if len(hash_node_id) == len(fn_node_id)+2 and hash_node_id[0] == fn_node_id[0]:
                         result_dict['filename'] = file_name
 
+
+                if hash_type in ['MD5','SHA1','SHA256','SSDEEP']:
+                    result_dict['actionable_type'] = 'Hash'
+                    result_dict['actionable_subtype'] = hash_type
+                    result_dict['actionable_info'] = hash_value
+                elif not hash_type:
+                    """
+                    By the definition in FIPS 180-4, published March 2012, there are
+                    160 bits in the output of SHA-1
+                    224 bits in the output of SHA-224
+                    256 bits in the output of SHA-256
+                    384 bits in the output of SHA-384
+                    512 bits in the output of SHA-512
+                    224 bits in the output of SHA-512/224
+                    256 bits in the output of SHA-512/256
+                    """
+                    length_hashtype_map = {
+                        32 : "MD5",
+                        40 : "SHA1",
+                        64 : "SHA256"
+                    }
+
+                    try:
+                        hash_type = length_hashtype_map[len(hash_value)]
+                        result_dict['actionable_type'] = 'Hash'
+                        result_dict['actionable_subtype'] = hash_type
+                        result_dict['actionable_info'] = hash_value
+                    except KeyError:
+                        #no suiting hash_type found
+                        pass
+
                 self.results.append(result_dict)
 
             
@@ -250,6 +288,8 @@ class ips(InfoObjectDetails):
                 # specific hash type that was requested
 
                 if is_ip:
+
+
                     result_dict = self.init_result_dict(io2f)
                     result_dict['category'] = category
                     result_dict['condition'] = condition
@@ -262,6 +302,16 @@ class ips(InfoObjectDetails):
                     #for value in address_values:
                     result = result_dict.copy()
                     result['ip'] = address_value
+
+                    if category:
+                        if 'v4' in category:
+                            result['actionable_type'] = 'IP'
+                            result['actionable_subtype'] = 'v4'
+                            result['actionable_info'] = address_value
+                        elif 'v6' in category:
+                            result['actionable_type'] = 'IP'
+                            result['actionable_subtype'] = 'v6'
+                            result['actionable_info'] = address_value
 
                     self.results.append(result)
 
@@ -283,6 +333,21 @@ class fqdns(InfoObjectDetails):
                default: True)
     """
 
+    def is_valid_fqdn(self,fqdn):
+        if len(fqdn) > 255:
+            return False
+        if fqdn[-1] == ".":
+            fqdn = fqdn[:-1] # strip exactly one dot from the right, if present
+        allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
+        return all(allowed.match(x) for x in fqdn.split("."))
+
+    def is_valid_url(self,url):
+        val = URLValidator()
+        try:
+            val(url)
+        except ValidationError:
+            return False
+        return True
 
     enrich_details = True
 
@@ -352,6 +417,19 @@ class fqdns(InfoObjectDetails):
             result['fqdn'] = io2f.value
             result['condition']= condition
             result['apply_condition'] = apply_condition
+
+
+
+
+            if(self.is_valid_fqdn(result['fqdn'])):
+                 result['actionable_type'] = 'FQDN'
+                 result['actionable_subtype'] = ''
+                 result['actionable_info'] = result['fqdn']
+            elif(self.is_valid_url(result['fqdn'])):
+                result['actionable_type'] = 'URL'
+                result['actionable_subtype'] = ''
+                result['actionable_info'] = result['fqdn']
+
             self.results.append(result)
 
 
@@ -402,5 +480,10 @@ class email_addresses(InfoObjectDetails):
                 result['email_address'] = io2f.value
                 result['condition']= condition
                 result['apply_condition'] = apply_condition
+
+                result['actionable_type'] = 'Email_Address'
+                result['actionable_subtype'] = ''
+                result['actionable_info'] = result['email_address']
+
                 self.results.append(result)
 
