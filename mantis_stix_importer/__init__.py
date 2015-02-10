@@ -32,7 +32,15 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                'email_addresses':{'module': 'mantis_stix_importer.postprocessors',
                                         'class': 'email_addresses',
                                         'name' : 'CybOX Email Address Export'},
-                               'cybox_all' : {'postprocessor_predicate' :
+                               'cybox_all' : {# To combine several exporters into one,
+                                              # define a predicate that takes a pair consisting
+                                              # of the key (e.g., 'hashes') and the
+                                              # associated dictionary value and returns True or False.
+                                              # If True is returned for a particular entry
+                                              # of the postprocessor registry, then
+                                              # the importer is added to the list of importers
+                                              # represented by the present entry.
+                                              'postprocessor_predicate' :
                                               (lambda x,y: 'mantis_stix_importer' in y.get('module','')),
                                           'name': 'CybOX Combined Export'},
                                'csv': {'module': 'dingos.core.extractors',
