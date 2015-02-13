@@ -185,6 +185,64 @@ class hashes(InfoObjectDetails):
                 self.results.append(result_dict)
 
             
+class filenames(InfoObjectDetails):
+
+    """
+
+    """
+    enrich_details = True
+
+    exporter_name = 'filenames'
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    default_columns = InfoObjectDetails._default_columns + [('filename','File Name'),
+                       ]
+
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+
+    def extractor(self,**kwargs):
+
+        filename_io2fvs = self.io2fs.filter(term__contains='File_Name',attribute='')
+
+        for io2fv in filename_io2fvs:
+
+            filename = io2fv.value
+
+            siblings = self.get_siblings(io2fv)
+
+            file_path = None
+            for sibling in siblings:
+                if 'File/Path' in sibling.term and sibling.attribute == '':
+                    file_path = sibling.value
+                    break
+
+
+
+
+            # We only include the hash in the list of results, if either no specific hash type
+            # has been requested, or the hash type specified in the object matches the
+            # specific hash type that was requested
+
+            result_dict = self.init_result_dict(io2fv)
+
+            result_dict['filename'] = filename
+            if file_path:
+                # Remove filename from path if it should have been included
+                file_path = file_path.rsplit(filename,1)[0]
+                result_dict['file_path'] = file_path
+
+            result_dict['actionable_type'] = 'Filename'
+            result_dict['actionable_subtype'] = None
+            result_dict['actionable_info'] = filename
+
+
+            self.results.append(result_dict)
+
 
 
 
@@ -369,19 +427,18 @@ class fqdns(InfoObjectDetails):
     def extractor(self, **kwargs):
 
         q_dedicated_objects = Q(iobject_type_name__in=['DomainNameObject',
-                                                       'DomainObject'
+                                                       'DomainObject',
                                                        'LinkObject',
                                                        'URIObject'],
                                         term='Properties/Value',
                                         attribute=''
                                         )
 
-        q_dns_query = Q(iobject_type_name='DNSQuery',
+        q_dns_query = Q(iobject_type_name='DNSQueryObject',
                         term='Properties/Question/QName',
                         attribute = '')
 
-        q_domain_name = Q(iobject_type_name='HTTPSessionObject',
-                          term__contains='/Domain_Name/Value',
+        q_domain_name = Q(term__contains='/Domain_Name/Value',
                           attribute = '')
 
 
@@ -389,6 +446,10 @@ class fqdns(InfoObjectDetails):
 
         fqdn_io2fvs = self.io2fs.filter(q_dedicated_objects | q_dns_query | q_domain_name)
 
+        #print "Found"
+        #printer_res =  map(lambda x: "%s %s %s %s" % (x.iobject_type_name,x.term,x.attribute,x.value),self.io2fs)
+        #print printer_res
+        #print fqdn_io2fvs
 
         for io2f in fqdn_io2fvs:
             result_dict = self.init_result_dict(io2f)
