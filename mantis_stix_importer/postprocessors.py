@@ -444,7 +444,7 @@ class fqdns(InfoObjectDetails):
                                         )
 
         q_dns_query = Q(iobject_type_name='DNSQueryObject',
-                        term='Properties/Question/QName',
+                        term='Properties/Question/QName/Value',
                         attribute = '')
 
         q_domain_name = Q(term__contains='/Domain_Name/Value',
