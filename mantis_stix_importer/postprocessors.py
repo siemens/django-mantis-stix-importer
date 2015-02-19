@@ -219,6 +219,7 @@ class filenames(InfoObjectDetails):
             for sibling in siblings:
                 if 'File/Path' in sibling.term and sibling.attribute == '':
                     file_path = sibling.value
+                    file_path_fact_pk = sibling.fact_id
                     break
 
 
@@ -231,17 +232,25 @@ class filenames(InfoObjectDetails):
             result_dict = self.init_result_dict(io2fv)
 
             result_dict['filename'] = filename
-            if file_path:
-                # Remove filename from path if it should have been included
-                file_path = file_path.rsplit(filename,1)[0]
-                result_dict['file_path'] = file_path
 
             result_dict['actionable_type'] = 'Filename'
-            result_dict['actionable_subtype'] = None
+            result_dict['actionable_subtype'] = ''
             result_dict['actionable_info'] = filename
 
+            if file_path:
+                result_dict['file_path'] = file_path
 
             self.results.append(result_dict)
+
+            # if the filepath contains the filename (as it should),
+            # we also create a 'file_path' actionable
+
+            #if file_path and re.search("%s$" % filename,file_path):
+            #    result_copy = result_dict.copy()
+            #    result_dict['actionable_type'] = 'Filepath'
+            #    result_dict['actionable_subtype'] = ''
+            #    result_dict['actionable_info'] = file_path
+            #    result_dict['fact.pk'] = file_path_fact_pk
 
 
 
@@ -487,11 +496,28 @@ class fqdns(InfoObjectDetails):
                  result['actionable_subtype'] = ''
                  result['actionable_info'] = result['fqdn']
             elif(self.is_valid_url(result['fqdn'])):
-                result['actionable_type'] = 'URL'
-                result['actionable_subtype'] = ''
-                result['actionable_info'] = result['fqdn']
+                 result['actionable_type'] = 'URL'
+                 result['actionable_subtype'] = ''
+                 result['actionable_info'] = result['fqdn']
 
             self.results.append(result)
+
+            # If an IP occurs as domain name, we also want it
+            # to appear as IP actionable rather than FQDN only
+            try:
+                checked_ip=ipaddr.IPAddress(result['actionable_info'])
+                is_ip = True
+                category = "v%s" % checked_ip.version
+            except ValueError:
+                category = None
+                is_ip = False
+
+            if is_ip:
+                copied_result = result.copy()
+                copied_result['actionable_type'] = 'IP'
+                copied_result['actionable_subtype'] = category
+
+                self.results.append(copied_result)
 
 
 class email_addresses(InfoObjectDetails):
@@ -517,7 +543,7 @@ class email_addresses(InfoObjectDetails):
     # values extracted from the information objects
     def extractor(self, **kwargs):
 
-        q_all_address_values = Q(
+        q_all_address_values = Q(iobject_type_name='EmailMessageObject',
                                  term__icontains='Address_Value',
                                  attribute=''
                                 )
@@ -528,7 +554,6 @@ class email_addresses(InfoObjectDetails):
             result_dict = self.init_result_dict(io2f)
             result_dict['condition'] = ''
             result_dict['apply_condition'] = ''
-            result_dict['fqdn'] = ''
 
             if '@' in io2f.value:
                 attributes = self.get_attributes(io2f)
@@ -543,8 +568,122 @@ class email_addresses(InfoObjectDetails):
                 result['apply_condition'] = apply_condition
 
                 result['actionable_type'] = 'Email_Address'
-                result['actionable_subtype'] = ''
+
+                if "From" in io2f.term or "Sender" in io2f.term:
+                    result['actionable_subtype'] = 'sender'
+                elif "Recipient" in io2f.term:
+                    result['actionable_subtype'] = 'recipient'
+                else:
+                    result['actionable_subtype'] = ''
                 result['actionable_info'] = result['email_address']
 
                 self.results.append(result)
 
+
+class email_subjects(InfoObjectDetails):
+    """
+
+    """
+    enrich_details = True
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    exporter_name = "email_subjects"
+
+    default_columns = InfoObjectDetails._default_columns + [
+        ('email_subject', 'Email Address'),
+    ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+    def extractor(self, **kwargs):
+
+        q_all_subjects      = Q(iobject_type_name='EmailMessageObject',
+                                 term__icontains='Header/Subject',
+                                 attribute=''
+                                )
+
+        subject_io2fvs = self.io2fs.filter(q_all_subjects)
+
+        for io2f in subject_io2fvs:
+            result = self.init_result_dict(io2f)
+            result['email_subject'] = io2f.value
+            result['actionable_type'] = 'email_subject'
+            result['actionable_subtype'] = ''
+            result['actionable_info'] = io2f.value
+
+            self.results.append(result)
+
+class x_mailers(InfoObjectDetails):
+    """
+
+    """
+    enrich_details = True
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    exporter_name = "x_mailer"
+
+    default_columns = InfoObjectDetails._default_columns + [
+        ('x_mailer', 'X Mailer'),
+    ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+    def extractor(self, **kwargs):
+
+        q_relevant_facts      = Q(iobject_type_name='EmailMessageObject',
+                                  term__icontains='Header/X_Mailer',
+                                  attribute=''
+                                )
+
+        relevant_io2fvs = self.io2fs.filter(q_relevant_facts)
+
+        for io2f in relevant_io2fvs:
+            result = self.init_result_dict(io2f)
+            result['x_mailer'] = io2f.value
+            result['actionable_type'] = 'x_mailer'
+            result['actionable_subtype'] = ''
+            result['actionable_info'] = io2f.value
+
+            self.results.append(result)
+
+class user_agents(InfoObjectDetails):
+    """
+
+    """
+    enrich_details = True
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    exporter_name = "user_agent"
+
+    default_columns = InfoObjectDetails._default_columns + [
+        ('user_agent', 'User Agent'),
+    ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+    def extractor(self, **kwargs):
+
+        q_relevant_facts      = Q(iobject_type_name='HTTPSessionObject',
+                                  term__icontains='/User_Agent',
+                                  attribute=''
+                                )
+
+        relevant_io2fvs = self.io2fs.filter(q_relevant_facts)
+
+        for io2f in relevant_io2fvs:
+            result = self.init_result_dict(io2f)
+            result['user_agent'] = io2f.value
+            result['actionable_type'] = 'user_agent'
+            result['actionable_subtype'] = ''
+            result['actionable_info'] = io2f.value
+
+            self.results.append(result)
