@@ -26,9 +26,44 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                'ips':{'module': 'mantis_stix_importer.postprocessors',
                                       'class': 'ips',
                                       'name' : 'CybOX IP Export'},
+                               'filenames':{'module': 'mantis_stix_importer.postprocessors',
+                                            'class': 'filenames',
+                                            'name' : 'CybOX  Filenames Export'},
                                'fqdns':{'module': 'mantis_stix_importer.postprocessors',
                                         'class': 'fqdns',
                                         'name' : 'CybOX FQDN Export'},
+                               'email_addresses':{'module': 'mantis_stix_importer.postprocessors',
+                                        'class': 'email_addresses',
+                                        'name' : 'CybOX Email Address Export'},
+                               'email_subjects' : {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'email_subjects',
+                                         'name' : 'CybOX Email Subject Export'
+                                         },
+                               'x_mailers' : {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'x_mailers',
+                                         'name' : 'CybOX X_Mailer Export'
+                                         },
+                               'user_agents' : {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'user_agents',
+                                         'name' : 'CybOX User-Agent Export'
+                                         },
+
+
+
+                               'cybox_all' : {# To combine several exporters into one,
+                                              # define a predicate that takes a pair consisting
+                                              # of the key (e.g., 'hashes') and the
+                                              # associated dictionary value and returns True or False.
+                                              # If True is returned for a particular entry
+                                              # of the postprocessor registry, then
+                                              # the importer is added to the list of importers
+                                              # represented by the present entry.
+                                              'postprocessor_predicate' :
+                                              (lambda x,y: 'mantis_stix_importer' in y.get('module','')),
+                                          'name': 'CybOX Combined Export'},
                                'csv': {'module': 'dingos.core.extractors',
                                         'class': 'csv_export',
                                         'name' : 'Generic CSV export',
