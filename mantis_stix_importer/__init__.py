@@ -35,6 +35,24 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                'email_addresses':{'module': 'mantis_stix_importer.postprocessors',
                                         'class': 'email_addresses',
                                         'name' : 'CybOX Email Address Export'},
+                               'email_subjects' : {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'email_subjects',
+                                         'name' : 'CybOX Email Subject Export'
+                                         },
+                               'x_mailers' : {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'x_mailers',
+                                         'name' : 'CybOX X_Mailer Export'
+                                         },
+                               'user_agents' : {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'user_agents',
+                                         'name' : 'CybOX User-Agent Export'
+                                         },
+
+
+
                                'cybox_all' : {# To combine several exporters into one,
                                               # define a predicate that takes a pair consisting
                                               # of the key (e.g., 'hashes') and the

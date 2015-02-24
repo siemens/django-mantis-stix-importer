@@ -610,7 +610,7 @@ class email_subjects(InfoObjectDetails):
         for io2f in subject_io2fvs:
             result = self.init_result_dict(io2f)
             result['email_subject'] = io2f.value
-            result['actionable_type'] = 'email_subject'
+            result['actionable_type'] = 'Email_Subject'
             result['actionable_subtype'] = ''
             result['actionable_info'] = io2f.value
 
@@ -646,7 +646,7 @@ class x_mailers(InfoObjectDetails):
         for io2f in relevant_io2fvs:
             result = self.init_result_dict(io2f)
             result['x_mailer'] = io2f.value
-            result['actionable_type'] = 'x_mailer'
+            result['actionable_type'] = 'X_Mailer'
             result['actionable_subtype'] = ''
             result['actionable_info'] = io2f.value
 
@@ -682,7 +682,7 @@ class user_agents(InfoObjectDetails):
         for io2f in relevant_io2fvs:
             result = self.init_result_dict(io2f)
             result['user_agent'] = io2f.value
-            result['actionable_type'] = 'user_agent'
+            result['actionable_type'] = 'User_Agent'
             result['actionable_subtype'] = ''
             result['actionable_info'] = io2f.value
 
