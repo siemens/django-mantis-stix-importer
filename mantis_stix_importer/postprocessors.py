@@ -21,7 +21,9 @@
 import ipaddr
 import re
 
+import pprint
 
+pp = pprint.PrettyPrinter(indent=2)
 
 from operator import itemgetter
 
@@ -60,9 +62,9 @@ class BasicSTIXExtractor(InfoObjectDetails):
             self.shortest_paths = shortest_path_length(self.graph)
             self.reverse_shortest_paths = shortest_path_length(self.reverse_graph)
 
-        iobject_pk = result['_object_pk']
+        iobject_pk = result['_iobject_pk']
         if self.package_graph:
-            iobject_pk = result['_object_pk']
+            iobject_pk = result['_iobject_pk']
 
             # The user also wants info about the packages that contain the object in question
             node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject_pk))
@@ -84,16 +86,14 @@ class BasicSTIXExtractor(InfoObjectDetails):
             reachable_nodes = predecessors.items()
             reachable_nodes.sort(key=itemgetter(1))
 
-            indicator_nodes = []
-            campaign_nodes = []
-            threat_actor_nodes = []
+
+            related_nodes = []
 
             while reachable_nodes:
                 object_pk, length = reachable_nodes.pop()
                 node_info = self.graph.node[object_pk]
 
                 if node_info['iobject_type'] == 'Indicator':
-
                     kill_chain_phase_object_pks = list(dfs_preorder_nodes(self.graph,
                                                                source=object_pk,
                                                                edge_pred= lambda x : 'phase_id' in x['attribute']))[1:]
@@ -102,15 +102,33 @@ class BasicSTIXExtractor(InfoObjectDetails):
 
                     node_info['kill_chain_phase_nodes'] = kill_chain_phase_nodes
 
-                    indicator_nodes.append(node_info)
-                elif node_info['iobject_type'] == 'ThreatActor':
-                    threat_actor_nodes.append(node_info)
-                elif node_info['iobject_type'] == 'Campaign':
-                    campaign_nodes.append(node_info)
+                    related_nodes.append(node_info)
+                #elif node_info['iobject_type'] == 'ThreatActor':
+                #    threat_actor_nodes.append(node_info)
+                #elif node_info['iobject_type'] == 'Campaign':
+                #    campaign_nodes.append(node_info)
 
-            result['relationship_info'] = {'indicator_nodes': indicator_nodes,
-                                           'threat_actor_nodes': threat_actor_nodes,
-                                           'campaing_nodes': campaign_nodes}
+            # We cannot link threat actors and campaings to indicators, yet, so we take
+            # all campaigns and threat actors found in the report
+
+            for pk in self.graph.nodes():
+                if 'Campaign' in self.graph.node[pk]['iobject_type']:
+                    related_nodes.append(self.graph.node[pk])
+                elif 'Threat' in self.graph.node[pk]['iobject_type']:
+                    related_nodes.append(self.graph.node[pk])
+                    identity_object_pks = list(dfs_preorder_nodes(self.graph,
+                                               source=pk,
+                                               edge_pred= lambda x : 'Identity' in x['term']))[1:]
+
+                    identity_object_nodes = map(lambda x: self.graph.node[x],identity_object_pks)
+
+                    self.graph.node[pk]['identity_object_nodes'] = identity_object_nodes
+
+
+
+            result['_relationship_info'] = related_nodes
+
+            pp.pprint(result['_relationship_info'])
 
         return result
 
@@ -229,7 +247,7 @@ class hashes(BasicSTIXExtractor):
                 result_dict['filename'] = ""
 
 
-                (node_id,file_name) = file_name_dict.get(result_dict['_object_pk'],(None,None))
+                (node_id,file_name) = file_name_dict.get(result_dict['_iobject_pk'],(None,None))
 
                 if node_id:
                     fn_node_id = node_id.split(':')
