@@ -128,7 +128,6 @@ class BasicSTIXExtractor(InfoObjectDetails):
 
             result['_relationship_info'] = related_nodes
 
-            pp.pprint(result['_relationship_info'])
 
         return result
 
