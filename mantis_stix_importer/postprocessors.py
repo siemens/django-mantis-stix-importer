@@ -21,7 +21,15 @@
 import ipaddr
 import re
 
+import pprint
 
+pp = pprint.PrettyPrinter(indent=2)
+
+from operator import itemgetter
+
+from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_path_length
+
+from networkx.algorithms.shortest_paths.generic import shortest_path_length
 
 from django.db.models import Q
 from django.core.validators import URLValidator
@@ -29,7 +37,102 @@ from django.core.exceptions import ValidationError
 
 from dingos.core.extractors import InfoObjectDetails
 
-class hashes(InfoObjectDetails):
+from dingos.graph_utils import dfs_preorder_nodes
+
+
+class BasicSTIXExtractor(InfoObjectDetails):
+
+
+    extract_relationships = True
+
+    reverse_graph = None
+
+    shortest_paths = None
+
+    reverse_shortest_paths = None
+
+
+
+    def init_result_dict(self,obj_or_io2f):
+        result = super(BasicSTIXExtractor,self).init_result_dict(obj_or_io2f)
+
+        if self.extract_relationships and not self.reverse_graph:
+
+            self.reverse_graph = self.graph.reverse()
+            self.shortest_paths = shortest_path_length(self.graph)
+            self.reverse_shortest_paths = shortest_path_length(self.reverse_graph)
+
+        iobject_pk = result['_iobject_pk']
+        if self.package_graph:
+            iobject_pk = result['_iobject_pk']
+
+            # The user also wants info about the packages that contain the object in question
+            node_ids = list(dfs_preorder_nodes(self.package_graph, source=iobject_pk))
+
+            package_names = []
+            package_urls = []
+            for id in node_ids:
+                node = self.package_graph.node[id]
+                # TODO: Below is STIX-specific and should be factored out
+                # by making the iobject type configurable
+                if "STIX_Package" in node['iobject_type']:
+                    package_names.append(node['name'])
+                    package_urls.append(node['url'])
+            result['_package_names'] = "| ".join(package_names)
+            result['_package_urls'] = "| ".join(package_urls)
+
+        if self.extract_relationships:
+            predecessors = self.reverse_shortest_paths[iobject_pk]
+            reachable_nodes = predecessors.items()
+            reachable_nodes.sort(key=itemgetter(1))
+
+
+            related_nodes = []
+
+            while reachable_nodes:
+                object_pk, length = reachable_nodes.pop()
+                node_info = self.graph.node[object_pk]
+
+                if node_info['iobject_type'] == 'Indicator':
+                    kill_chain_phase_object_pks = list(dfs_preorder_nodes(self.graph,
+                                                               source=object_pk,
+                                                               edge_pred= lambda x : 'phase_id' in x['attribute']))[1:]
+
+                    kill_chain_phase_nodes = map(lambda x: self.graph.node[x],kill_chain_phase_object_pks)
+
+                    node_info['kill_chain_phase_nodes'] = kill_chain_phase_nodes
+
+                    related_nodes.append(node_info)
+                #elif node_info['iobject_type'] == 'ThreatActor':
+                #    threat_actor_nodes.append(node_info)
+                #elif node_info['iobject_type'] == 'Campaign':
+                #    campaign_nodes.append(node_info)
+
+            # We cannot link threat actors and campaings to indicators, yet, so we take
+            # all campaigns and threat actors found in the report
+
+            for pk in self.graph.nodes():
+                if 'Campaign' in self.graph.node[pk]['iobject_type']:
+                    related_nodes.append(self.graph.node[pk])
+                elif 'Threat' in self.graph.node[pk]['iobject_type']:
+                    related_nodes.append(self.graph.node[pk])
+                    identity_object_pks = list(dfs_preorder_nodes(self.graph,
+                                               source=pk,
+                                               edge_pred= lambda x : 'Identity' in x['term']))[1:]
+
+                    identity_object_nodes = map(lambda x: self.graph.node[x],identity_object_pks)
+
+                    self.graph.node[pk]['identity_object_nodes'] = identity_object_nodes
+
+
+
+            result['_relationship_info'] = related_nodes
+
+
+        return result
+
+
+class hashes(BasicSTIXExtractor):
 
     """
     This class defines an exporter that extracts all information about hash values
@@ -143,7 +246,7 @@ class hashes(InfoObjectDetails):
                 result_dict['filename'] = ""
 
 
-                (node_id,file_name) = file_name_dict.get(result_dict['_object_pk'],(None,None))
+                (node_id,file_name) = file_name_dict.get(result_dict['_iobject_pk'],(None,None))
 
                 if node_id:
                     fn_node_id = node_id.split(':')
@@ -185,7 +288,7 @@ class hashes(InfoObjectDetails):
                 self.results.append(result_dict)
 
             
-class filenames(InfoObjectDetails):
+class filenames(BasicSTIXExtractor):
 
     """
 
@@ -258,7 +361,7 @@ class filenames(InfoObjectDetails):
 
 
 
-class ips(InfoObjectDetails):
+class ips(BasicSTIXExtractor):
 
     """
     This class defines an exporter that extracts all information about ips
@@ -384,7 +487,7 @@ class ips(InfoObjectDetails):
 
 
 
-class fqdns(InfoObjectDetails):
+class fqdns(BasicSTIXExtractor):
     """
     This class defines an exporter that extracts all information about fqdns
     from a set of CybOX objects. It makes the following columns/json-keys available:
@@ -520,7 +623,7 @@ class fqdns(InfoObjectDetails):
                 self.results.append(copied_result)
 
 
-class email_addresses(InfoObjectDetails):
+class email_addresses(BasicSTIXExtractor):
     """
 
     """
@@ -580,7 +683,7 @@ class email_addresses(InfoObjectDetails):
                 self.results.append(result)
 
 
-class email_subjects(InfoObjectDetails):
+class email_subjects(BasicSTIXExtractor):
     """
 
     """
@@ -616,7 +719,7 @@ class email_subjects(InfoObjectDetails):
 
             self.results.append(result)
 
-class x_mailers(InfoObjectDetails):
+class x_mailers(BasicSTIXExtractor):
     """
 
     """
@@ -652,7 +755,7 @@ class x_mailers(InfoObjectDetails):
 
             self.results.append(result)
 
-class user_agents(InfoObjectDetails):
+class user_agents(BasicSTIXExtractor):
     """
 
     """

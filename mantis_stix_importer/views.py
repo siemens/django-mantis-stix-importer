@@ -146,19 +146,19 @@ class StixPackageView(InfoObjectView):
         threat_actor_info = []
         for e in edges_from_top:
             data = {'pk': e[1]}
-            if "Observable" in e[2]['term'][0]:
+            if "Observable" in e[2]['term']:
                 observable_info.append(data)
-            elif "Indicator" in e[2]['term'][0]:
+            elif "Indicator" in e[2]['term']:
                 indicator_info.append(data)
-            elif "TTP" in e[2]['term'][0]: #todo
+            elif "TTP" in e[2]['term']: #todo
                 ttp_info.append(data)
-            elif "Incident" in e[2]['term'][0]: #todo
+            elif "Incident" in e[2]['term']: #todo
                 incident_info.append(data)
-            elif "Course_Of_Action" in e[2]['term'][0]: #todo
+            elif "Course_Of_Action" in e[2]['term']: #todo
                 course_of_action_info.append(data)
-            elif "Campaign" in e[2]['term'][0]: #todo
+            elif "Campaign" in e[2]['term']: #todo
                 campaign_info.append(data)
-            elif "Threat_Actor" in e[2]['term'][0]:
+            elif "Threat_Actor" in e[2]['term']:
                 threat_actor_info.append(data)
         context['observables'] = observable_info
         context['indicators'] = indicator_info
