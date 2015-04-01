@@ -516,7 +516,19 @@ class fqdns(BasicSTIXExtractor):
         try:
             val(url)
         except ValidationError:
-            return False
+            # Validation may raise an error if there is no schema or the schema
+            # is not in ['http','https','ftp', ...]. For our purposes, we
+            # do not care about the schema or its existence.
+
+            if '//' in url:
+                check_url = url.split('//',1)[1]
+                check_url = "http://%s" % check_url
+            else:
+                check_url = "http://%s" % url
+            try:
+                val(check_url)
+            except:
+                return False
         return True
 
     enrich_details = True
