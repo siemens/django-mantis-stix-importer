@@ -361,12 +361,13 @@ class STIX_Import:
 
                 object_markings = markings + marking_dict.get(embedding_STIX_Package,[])
 
+
             import_dict = self.iobject_import(id_and_rev_info,
                                               elt_name,
                                               elt_dict,
                                               markings=object_markings)
 
-            if track_created_objects:
+            if track_created_objects and import_dict:
                 if import_dict['object'].pk:
                     import_dict['pk'] = import_dict['object'].pk
                 else:
