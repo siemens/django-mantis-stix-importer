@@ -21,6 +21,8 @@
 import ipaddr
 import re
 
+from lxml import etree, objectify
+
 import pprint
 
 pp = pprint.PrettyPrinter(indent=2)
@@ -38,6 +40,8 @@ from django.core.exceptions import ValidationError
 from dingos.core.extractors import InfoObjectDetails
 
 from dingos.graph_utils import dfs_preorder_nodes
+
+from dingos_authoring.models import AuthoredData
 
 
 class BasicSTIXExtractor(InfoObjectDetails):
@@ -380,14 +384,25 @@ class test_mechanisms(BasicSTIXExtractor):
 
     def extractor(self,**kwargs):
 
-        ids_io2fvs = self.io2fs.filter(iobject_type_name__in=['OpenIOC2010','Snort'],term__in=['Rule','ioc'])
+        query_obj = (Q(iobject_type_name='OpenIOC2010',term='ioc',attribute='')  |
+                    Q(iobject_type_name='Snort',term='Rule') )
+
+        ids_io2fvs = self.io2fs.filter(query_obj)# iobject_type_name__in=['OpenIOC2010','Snort'],term__in=['Rule','ioc'])
+
+
 
         sid_search = re.compile(r"sid\s*:\s*(?P<sid>[0-9]+)\s*;")
 
 
+
         actionable_type = 'IDS_Rule'
 
+
         for io2fv in ids_io2fvs:
+            actionable_subtype=''
+            rule_id= None
+            ids_rule = ''
+
             term = io2fv.term
             value = io2fv.value
             print value
@@ -396,15 +411,45 @@ class test_mechanisms(BasicSTIXExtractor):
                 m = sid_search.search(value)
                 if m:
                     rule_id = m.groupdict()['sid']
-                    print "Found sid %s" % rule_id
                 else:
                     rule_id = None
+                ids_rule = value
             elif term == 'ioc':
                 actionable_subtype = 'IOC'
                 try:
                     rule_id=io2fv.referenced_iobject_identifier.uid
+                    rule_namespace=io2fv.referenced_iobject_identifier.namespace.uri
                 except:
                     rule_id=None
+
+                if rule_id:
+                    # retrieve the XML from which the object was imported
+                    authored_objects = io2fv.iobject.yielded_by.all().filter(kind=AuthoredData.XML).order_by('-timestamp')
+
+                    if authored_objects:
+
+                        authored_object = authored_objects[0]
+                        root = etree.fromstring(authored_object.content)
+                        ioc_root =  root.xpath("//ns:ioc[@id ='%s']" % rule_id,namespaces={'ns':'http://stix.mitre.org/extensions/TestMechanism#OpenIOC2010-1'}) # [@id='{%s}%s']" % (rule_namespace,rule_id))
+                        if ioc_root:
+                            ioc_root = ioc_root[0]
+                        i = ioc_root.tag.find('}')
+                        if i >= 0:
+                            ioc_root.tag = ioc_root.tag[i+1:]
+
+                        #objectify.deannotate(ioc_root,
+                        #                     pytype=False,
+                        #                     xsi=False,
+                        #                     xsi_nil=False,
+                        #                     cleanup_namespaces=True)
+                        #print "XML"
+                        #etree.cleanup_namespaces(ioc_root)
+                        xml_string =  etree.tostring(ioc_root,
+                                             pretty_print=True,
+                                             xml_declaration=True,
+                                             encoding='UTF-8')
+                        xml_string=re.sub(r'\s*xmlns:(?!xsi)[^=]+="[^"]+"',"",xml_string)
+                        ids_rule = xml_string
 
             if rule_id:
                 result_dict = self.init_result_dict(io2fv)
@@ -412,9 +457,10 @@ class test_mechanisms(BasicSTIXExtractor):
                 result_dict['actionable_type'] = actionable_type
                 result_dict['actionable_subtype'] = actionable_subtype
                 result_dict['actionable_info'] = rule_id
+                result_dict['actionable_ids_rule'] = ids_rule
 
             self.results.append(result_dict)
-            
+        pp.pprint(self.results)
 
 class ips(BasicSTIXExtractor):
 
