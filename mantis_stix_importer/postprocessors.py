@@ -358,8 +358,63 @@ class filenames(BasicSTIXExtractor):
 
 
 
+class test_mechanisms(BasicSTIXExtractor):
+
+    """
+
+    """
+    enrich_details = True
+
+    exporter_name = 'test_mechanisms'
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    default_columns = InfoObjectDetails._default_columns + [('rule_id','Rule ID'),
+                       ]
 
 
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+
+    def extractor(self,**kwargs):
+
+        ids_io2fvs = self.io2fs.filter(iobject_type_name__in=['OpenIOC2010','Snort'],term__in=['Rule','ioc'])
+
+        sid_search = re.compile(r"sid\s*:\s*(?P<sid>[0-9]+)\s*;")
+
+
+        actionable_type = 'IDS_Rule'
+
+        for io2fv in ids_io2fvs:
+            term = io2fv.term
+            value = io2fv.value
+            print value
+            if term == 'Rule':
+                actionable_subtype = 'Snort'
+                m = sid_search.search(value)
+                if m:
+                    rule_id = m.groupdict()['sid']
+                    print "Found sid %s" % rule_id
+                else:
+                    rule_id = None
+            elif term == 'ioc':
+                actionable_subtype = 'IOC'
+                try:
+                    rule_id=io2fv.referenced_iobject_identifier.uid
+                except:
+                    rule_id=None
+
+            if rule_id:
+                result_dict = self.init_result_dict(io2fv)
+                result_dict['rule_id'] = rule_id
+                result_dict['actionable_type'] = actionable_type
+                result_dict['actionable_subtype'] = actionable_subtype
+                result_dict['actionable_info'] = rule_id
+
+            self.results.append(result_dict)
+            
 
 class ips(BasicSTIXExtractor):
 
