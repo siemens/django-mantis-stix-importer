@@ -28,6 +28,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=2)
 
 from operator import itemgetter
+from copy import deepcopy
 
 from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_path_length
 
@@ -931,15 +932,33 @@ class winregistrykeys(BasicSTIXExtractor):
         infos = {}
         for io2f in subject_io2fvs:
             pk = io2f.iobject.pk
-            data = {io2f.term: io2f.value}
-            try:
+
+            # initialize the dict for this iobject
+            if not pk in infos:
+                infos[pk] = {}
+
+            # this information is valid for all all the values belonging to the same iobject
+            if io2f.term == 'Properties/Hive' or io2f.term == 'Properties/Key':
+                data = {io2f.term: io2f.value}
                 infos[pk].update(data)
-            except KeyError:
-                infos[pk] = data
+
+            # we gather all information belonging to one cell in this key
+            # this is needed because Values is a List of Values
+            if io2f.term == 'Properties/Values/Value/Name':
+                siblings = self.get_siblings(io2f)
+                value_data = {}
+                for fact in siblings:
+                    value_data.update({fact.term: fact.value})
+
+                if not 'values' in infos[pk]:
+                    infos[pk]['values'] = []
+
+                infos[pk]['values'].append(value_data)
 
             # this is the main fact, use it to initialize the result
             if io2f.term == 'Properties/Key':
                 infos[pk].update({'result': self.init_result_dict(io2f)})
+
 
         for pk in infos:
             try:
@@ -950,17 +969,26 @@ class winregistrykeys(BasicSTIXExtractor):
             try:
                 hive = infos[pk]['Properties/Hive']
                 key = infos[pk]['Properties/Key']
-                # TODO: cybox supports list of values... we only support one (name,data,datatype)-tuple at the moment
-                value = infos[pk]['Properties/Values/Value/Name']
-                data = infos[pk]['Properties/Values/Value/Data']
-                datatype = infos[pk]['Properties/Values/Value/Datatype']
-            except KeyError: # we are missing an important fact... recover somehow?
+
+                # there is a list of values (cells) in this key
+                # generate a result for each cell
+                for value in infos[pk]['values']:
+                    try:
+                        name = value['Properties/Values/Value/Name']
+                        data = value['Properties/Values/Value/Data']
+                        datatype = value['Properties/Values/Value/Datatype']
+
+                        key_representation = "%s\%s /v %s /t %s /d %s" % (hive, key, name, datatype, data)
+                        result['winregistrykey'] = key_representation
+                        result['actionable_type'] = 'WinRegistryKey'
+                        result['actionable_subtype'] = ''
+                        result['actionable_info'] = key_representation
+                    except KeyError:  # we are missing an important fact, continue with next cell
+                        continue  # skip this cell
+
+                    # we will use this result object for the other cell values again, so we use deepcopy
+                    self.results.append(deepcopy(result))
+
+            except KeyError:  # we are missing an important fact... recover somehow?
                 continue  # skip this key
 
-            key_representation = "%s\%s /v %s /t %s /d %s" % (hive, key, value, datatype, data)
-            result['winregistrykey'] = key_representation
-            result['actionable_type'] = 'WinRegistryKey'
-            result['actionable_subtype'] = ''
-            result['actionable_info'] = key_representation
-
-            self.results.append(result)
