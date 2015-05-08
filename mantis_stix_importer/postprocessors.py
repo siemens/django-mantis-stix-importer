@@ -930,8 +930,7 @@ class winregistrykeys(BasicSTIXExtractor):
         subject_io2fvs = self.io2fs.filter(q_all_subjects)
         infos = {}
         for io2f in subject_io2fvs:
-            result = self.init_result_dict(io2f)
-            pk = result['_iobject_pk']
+            pk = io2f.iobject.pk
             data = {io2f.term: io2f.value}
             try:
                 infos[pk].update(data)
@@ -940,7 +939,7 @@ class winregistrykeys(BasicSTIXExtractor):
 
             # this is the main fact, use it to initialize the result
             if io2f.term == 'Properties/Key':
-                infos[pk].update({'result': result})
+                infos[pk].update({'result': self.init_result_dict(io2f)})
 
         for pk in infos:
             try:
@@ -959,7 +958,7 @@ class winregistrykeys(BasicSTIXExtractor):
                 continue  # skip this key
 
             key_representation = "%s\%s /v %s /t %s /d %s" % (hive, key, value, datatype, data)
-            result['winregistrykey'] = io2f.value
+            result['winregistrykey'] = key_representation
             result['actionable_type'] = 'WinRegistryKey'
             result['actionable_subtype'] = ''
             result['actionable_info'] = key_representation
