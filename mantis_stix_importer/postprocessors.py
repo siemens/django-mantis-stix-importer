@@ -235,8 +235,8 @@ class hashes(BasicSTIXExtractor):
                     break
 
 
-            
-            
+
+
             # We only include the hash in the list of results, if either no specific hash type
             # has been requested, or the hash type specified in the object matches the
             # specific hash type that was requested
@@ -244,7 +244,7 @@ class hashes(BasicSTIXExtractor):
 
             if  (not specific_hash_type) or hash_type in specific_hash_type:
                 result_dict = self.init_result_dict(io2f)
-                
+
                 result_dict['hash_type'] = hash_type
                 result_dict['hash_value'] = hash_value
                 result_dict['filename'] = ""
@@ -291,7 +291,7 @@ class hashes(BasicSTIXExtractor):
 
                 self.results.append(result_dict)
 
-            
+
 class filenames(BasicSTIXExtractor):
 
     """
@@ -901,5 +901,67 @@ class user_agents(BasicSTIXExtractor):
             result['actionable_type'] = 'User_Agent'
             result['actionable_subtype'] = ''
             result['actionable_info'] = io2f.value
+
+            self.results.append(result)
+
+class winregistrykeys(BasicSTIXExtractor):
+    """
+
+    """
+    enrich_details = True
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    exporter_name = "winregistrykeys"
+
+    default_columns = InfoObjectDetails._default_columns + [
+        ('winregistrykey', 'Windows Registry Key'),
+    ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+    def extractor(self, **kwargs):
+        q_all_subjects = Q(iobject_type_name='WinRegistryKeyObject',
+                           term__contains='Properties',
+                           )
+
+        subject_io2fvs = self.io2fs.filter(q_all_subjects)
+        infos = {}
+        for io2f in subject_io2fvs:
+            result = self.init_result_dict(io2f)
+            pk = result['_iobject_pk']
+            data = {io2f.term: io2f.value}
+            try:
+                infos[pk].update(data)
+            except KeyError:
+                infos[pk] = data
+
+            # this is the main fact, use it to initialize the result
+            if io2f.term == 'Properties/Key':
+                infos[pk].update({'result': result})
+
+        for pk in infos:
+            try:
+                result = infos[pk]['result']
+            except KeyError:  # this should never happen... this means we could not find a fact 'Properties/Key'
+                continue  # skip this infoobject...
+
+            try:
+                hive = infos[pk]['Properties/Hive']
+                key = infos[pk]['Properties/Key']
+                # TODO: cybox supports list of values... we only support one (name,data,datatype)-tuple at the moment
+                value = infos[pk]['Properties/Values/Value/Name']
+                data = infos[pk]['Properties/Values/Value/Data']
+                datatype = infos[pk]['Properties/Values/Value/Datatype']
+            except KeyError: # we are missing an important fact... recover somehow?
+                continue  # skip this key
+
+            key_representation = "%s\%s /v %s /t %s /d %s" % (hive, key, value, datatype, data)
+            result['winregistrykey'] = io2f.value
+            result['actionable_type'] = 'WinRegistryKey'
+            result['actionable_subtype'] = ''
+            result['actionable_info'] = key_representation
 
             self.results.append(result)

@@ -50,6 +50,11 @@ STIX_POSTPROCESSOR_REGISTRY = {'hashes':{'module':'mantis_stix_importer.postproc
                                          'class' : 'user_agents',
                                          'name' : 'CybOX User-Agent Export'
                                          },
+                               'winregistrykeys': {
+                                         'module' : 'mantis_stix_importer.postprocessors',
+                                         'class' : 'winregistrykeys',
+                                         'name' : 'CybOX Windows Registry Key Export'
+                                         },
                                'test_mechanisms' : {
                                          'module' : 'mantis_stix_importer.postprocessors',
                                          'class' : 'test_mechanisms',
