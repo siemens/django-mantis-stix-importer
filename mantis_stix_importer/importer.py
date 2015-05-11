@@ -400,15 +400,26 @@ class STIX_Import:
                 processor = processor_class(namespace_dict=self.namespace_dict,
                                             default_identifier_ns_uri=self.default_identifier_ns_uri,
                                             allowed_identifier_ns_uris=self.allowed_identifier_ns_uris,
-                                            substitute_unallowed_namespaces=self.substitute_unallowed_namespaces)
+                                            substitute_unallowed_namespaces=self.substitute_unallowed_namespaces,
+                                            )
 
-                processor.xml_import(self,
-                                     xml_content=xml_node,
-                                     markings=object_markings,
-                                     identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]],
-                                     initialize_importer=False,
+                defered_created_object_info  = processor.xml_import(self,
+                                                             xml_content=xml_node,
+                                                             markings=object_markings,
+                                                             identifier_ns_uri=self.namespace_dict[id_and_rev_info['id'].split(':')[0]],
+                                                             initialize_importer=False,
+                                                             track_created_objects=track_created_objects
 
                 )
+
+
+                logger.info("Defered object info %s" % defered_created_object_info)
+                logger.info("Track %s" % track_created_objects)
+                if track_created_objects and defered_created_object_info:
+                    logger.info("Extending created object info with %s" % defered_created_object_info)
+                    created_object_info.extend(defered_created_object_info)
+
+
             else:
                 logger.error("Did not find a processor for %s" % id_and_rev_info['defer_processing']['processor'])
 
