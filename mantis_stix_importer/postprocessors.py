@@ -376,7 +376,7 @@ class test_mechanisms(BasicSTIXExtractor):
     # information is provided in the call
 
     default_columns = InfoObjectDetails._default_columns + [('rule_id','Rule ID'),
-                       ]
+        ('actionable_ids_rule','IDS Rule')]
 
 
     # define below the extractor function that sets self.results
