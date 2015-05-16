@@ -28,6 +28,7 @@ import pprint
 pp = pprint.PrettyPrinter(indent=2)
 
 from operator import itemgetter
+from copy import deepcopy
 
 from networkx.algorithms.shortest_paths.unweighted import all_pairs_shortest_path_length
 
@@ -235,8 +236,8 @@ class hashes(BasicSTIXExtractor):
                     break
 
 
-            
-            
+
+
             # We only include the hash in the list of results, if either no specific hash type
             # has been requested, or the hash type specified in the object matches the
             # specific hash type that was requested
@@ -244,7 +245,7 @@ class hashes(BasicSTIXExtractor):
 
             if  (not specific_hash_type) or hash_type in specific_hash_type:
                 result_dict = self.init_result_dict(io2f)
-                
+
                 result_dict['hash_type'] = hash_type
                 result_dict['hash_value'] = hash_value
                 result_dict['filename'] = ""
@@ -291,7 +292,7 @@ class hashes(BasicSTIXExtractor):
 
                 self.results.append(result_dict)
 
-            
+
 class filenames(BasicSTIXExtractor):
 
     """
@@ -375,7 +376,7 @@ class test_mechanisms(BasicSTIXExtractor):
     # information is provided in the call
 
     default_columns = InfoObjectDetails._default_columns + [('rule_id','Rule ID'),
-                       ]
+        ('actionable_ids_rule','IDS Rule')]
 
 
     # define below the extractor function that sets self.results
@@ -903,3 +904,100 @@ class user_agents(BasicSTIXExtractor):
             result['actionable_info'] = io2f.value
 
             self.results.append(result)
+
+class winregistrykeys(BasicSTIXExtractor):
+    """
+
+    """
+    enrich_details = True
+
+    # define the default columns that are output if no column
+    # information is provided in the call
+
+    exporter_name = "winregistrykeys"
+
+    default_columns = InfoObjectDetails._default_columns + [
+        ('winregistrykey', 'Windows Registry Key'),
+    ]
+
+    # define below the extractor function that sets self.results
+    # to a dictionary that maps column-names / keys to
+    # values extracted from the information objects
+    def extractor(self, **kwargs):
+        q_all_subjects = Q(iobject_type_name='WinRegistryKeyObject',
+                           term__contains='Properties',
+                           )
+
+        subject_io2fvs = self.io2fs.filter(q_all_subjects)
+        infos = {}
+        for io2f in subject_io2fvs:
+            pk = io2f.iobject.pk
+
+            # initialize the dict for this iobject
+            if not pk in infos:
+                infos[pk] = {}
+
+            # this information is valid for all all the values belonging to the same iobject
+            if io2f.term == 'Properties/Hive' or io2f.term == 'Properties/Key':
+                data = {io2f.term: io2f.value}
+                infos[pk].update(data)
+
+            # we gather all information belonging to one cell in this key
+            # this is needed because Values is a List of Values
+            if not 'values' in infos[pk]:
+                infos[pk]['values'] = []
+
+            # we use Value/Name as there has to be at least a name to save the data somewhere
+            if io2f.term == 'Properties/Values/Value/Name':
+                siblings = self.get_siblings(io2f)
+                value_data = {}
+                for fact in siblings:
+                    value_data.update({fact.term: fact.value})
+
+                infos[pk]['values'].append(value_data)
+
+            # this is the main fact, use it to initialize the result
+            if io2f.term == 'Properties/Key':
+                infos[pk].update({'result': self.init_result_dict(io2f)})
+
+
+        for pk in infos:
+            try:
+                result = infos[pk]['result']
+            except KeyError:  # this should never happen... this means we could not find a fact 'Properties/Key'
+                continue  # skip this infoobject...
+
+            try:
+                hive = infos[pk]['Properties/Hive']
+                key = infos[pk]['Properties/Key']
+
+                if len(infos[pk]['values']) == 0:  # no cells available, just hive+key
+                    key_representation = "%s\%s" % (hive, key)
+                    result['winregistrykey'] = key_representation
+                    result['actionable_type'] = 'WinRegistryKey'
+                    result['actionable_subtype'] = ''
+                    result['actionable_info'] = key_representation
+                    self.results.append(result)  # only one object for this result, no deepcopy needed.
+                else:
+                    # there is a list of values (cells) in this key
+                    # generate a result for each cell
+                    for value in infos[pk]['values']:
+                        try:
+                            name = value['Properties/Values/Value/Name']
+                            data = value['Properties/Values/Value/Data']
+                            datatype = value['Properties/Values/Value/Datatype']
+
+                            key_representation = "%s\%s /v %s /t %s /d %s" % (hive, key, name, datatype, data)
+                            result['winregistrykey'] = key_representation
+                            result['actionable_type'] = 'WinRegistryKey'
+                            result['actionable_subtype'] = ''
+                            result['actionable_info'] = key_representation
+                        except KeyError:  # we are missing an important fact, continue with next cell
+                            continue  # skip this cell
+
+                        # we will use this result object for the other cell values again, so we use deepcopy
+                        self.results.append(deepcopy(result))
+
+            except KeyError:  # we are missing an important fact... recover somehow?
+                continue  # skip this key
+
